@@ -153,9 +153,6 @@ Este projeto **não é open source**. O código é distribuído sob a **Business
 
 ## 👩‍💻 Time
 
-| Nome | Papel |
-|---|---|
-| `<nome>` | Dados e coleta |
-| `<nome>` | Backend |
-| `<nome>` | Frontend |
-| `<nome>` | Produto e pitch |
+* Guilherme Carvalho Mais
+* Gabriel Duarte Frias
+* João Gabriel Breganon Ferreira
