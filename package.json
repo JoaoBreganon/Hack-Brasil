@@ -12,7 +12,8 @@
 		"test:watch": "vitest",
 		"convex:dev": "convex dev",
 		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"format:check": "prettier --check .",
+		"convex:limpar": "node scripts/limpar-gerados.mjs && prettier --write convex/_generated"
 	},
 	"dependencies": {
 		"convex": "^1.50.0"

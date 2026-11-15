@@ -126,6 +126,7 @@ WORKOS_CLIENT_ID=
 |---|---|
 | `pnpm dev` | sobe o app em http://localhost:3000 |
 | `pnpm convex:dev` | sobe o backend Convex |
+| `pnpm convex:limpar` | tira os comentários que o Convex escreve em `convex/_generated` (rodar antes de cada commit que mexer no Convex) |
 | `pnpm test` | roda os testes do domínio |
 | `pnpm typecheck` | confere os tipos de todos os pacotes |
 | `pnpm lint` | roda o ESLint |
