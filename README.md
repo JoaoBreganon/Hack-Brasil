@@ -108,21 +108,47 @@ pnpm dev
 **Variáveis de ambiente**
 
 ```env
+NEXT_PUBLIC_SITE_URL=
 CONVEX_DEPLOYMENT=
 NEXT_PUBLIC_CONVEX_URL=
+CONVEX_SITE_URL=
 FIRECRAWL_API_KEY=
+NVOIP_API_KEY=
+LLM_API_KEY=
 RESEND_API_KEY=
 WORKOS_API_KEY=
 WORKOS_CLIENT_ID=
-LLM_API_KEY=
 ```
+
+**Comandos**
+
+| Comando | O que faz |
+|---|---|
+| `pnpm dev` | sobe o app em http://localhost:3000 |
+| `pnpm convex:dev` | sobe o backend Convex |
+| `pnpm test` | roda os testes do domínio |
+| `pnpm typecheck` | confere os tipos de todos os pacotes |
+| `pnpm lint` | roda o ESLint |
+| `pnpm format` | formata o código com tab (Prettier) |
 
 ## 🗂️ Estrutura
 
 ```
-apps/web/        Next.js: área do diretor, painel da secretaria, consulta aberta
-convex/          banco, regras de risco e rotinas agendadas
-packages/pdf/    modelos de ata, consolidação de preços e checklist da compra
+apps/web/              Next.js: área do diretor, painel da secretaria, consulta aberta
+  src/app/             páginas, SEO (robots, sitemap, imagens de compartilhamento)
+  src/components/      componentes de interface e SEO
+  src/config/          dados do site
+  src/fontes/          Bricolage Grotesque e Geist, servidas localmente
+convex/                banco, funções e rotinas agendadas
+packages/dominio/      regras do PDDE, sem dependências externas e com testes
+  src/calendario/      dias úteis, feriados nacionais e Carnaval
+  src/prazo/           10º dia útil de fevereiro e estorno
+  src/risco/           nível de risco de perder o saldo
+  src/regras/          o que pode e o que não pode ser comprado, com a norma citada
+  src/orcamento/       três orçamentos e menor preço
+  src/plano/           plano de compra dentro do saldo de cada categoria
+  src/formato/         moeda e data em pt-BR
+  src/exemplos/        escola exemplo da demo
 ```
 
 ## 🏆 Hack Brasil 2026

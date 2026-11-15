@@ -1,32 +1,70 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { DadosEstruturados } from "@/components/seo/dados-estruturados";
+import { SITE } from "@/config/site";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const TITULO = `${SITE.nome} · ${SITE.slogan}`;
+
+const geist = localFont({
+	src: "../fontes/geist-latin.woff2",
+	variable: "--font-geist",
+	weight: "100 900",
+	display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const bricolage = localFont({
+	src: "../fontes/bricolage-grotesque-latin.woff2",
+	variable: "--font-bricolage",
+	weight: "200 800",
+	display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Aloca",
-  description: "Nenhuma escola perde o que já é dela.",
+	metadataBase: new URL(SITE.url),
+	title: { default: TITULO, template: `%s · ${SITE.nome}` },
+	description: SITE.descricao,
+	applicationName: SITE.nome,
+	keywords: [...SITE.palavrasChave],
+	authors: SITE.autores.map((nome) => ({ name: nome })),
+	creator: SITE.nome,
+	category: "education",
+	alternates: { canonical: "/" },
+	openGraph: {
+		type: "website",
+		locale: SITE.localidade,
+		url: "/",
+		siteName: SITE.nome,
+		title: TITULO,
+		description: SITE.descricao,
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: TITULO,
+		description: SITE.descricao,
+	},
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: { index: true, follow: true, "max-image-preview": "large" },
+	},
+	formatDetection: { telephone: false, email: false, address: false },
+};
+
+export const viewport: Viewport = {
+	themeColor: SITE.corDoTema,
+	width: "device-width",
+	initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  return (
-    <html
-      lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <ConvexClientProvider>{children}</ConvexClientProvider>
-      </body>
-    </html>
-  );
+	return (
+		<html lang={SITE.idioma} className={`${geist.variable} ${bricolage.variable} h-full antialiased`}>
+			<body className="flex min-h-full flex-col">
+				<DadosEstruturados />
+				<ConvexClientProvider>{children}</ConvexClientProvider>
+			</body>
+		</html>
+	);
 }
