@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { criarData, diasUteisAte, domingoDePascoa, ehDiaUtil, enesimoDiaUtilDoMes, paraTextoIso } from "./calendario";
+import { criarData, diasUteisAte, domingoDePascoa, ehDiaUtil, enesimoDiaUtilDoMes, listarDiasUteis, paraTextoIso } from "./calendario";
 
 describe("domingoDePascoa", () => {
 	it.each([
@@ -48,5 +48,16 @@ describe("enesimoDiaUtilDoMes", () => {
 describe("diasUteisAte", () => {
 	it("conta os dias úteis de um intervalo, com as duas pontas", () => {
 		expect(diasUteisAte(criarData(2028, 2, 1), criarData(2028, 2, 14))).toBe(10);
+	});
+});
+
+describe("listarDiasUteis", () => {
+	it("lista só os dias úteis, pulando fim de semana e feriado", () => {
+		const dias = listarDiasUteis(criarData(2027, 12, 23), criarData(2027, 12, 28)).map(paraTextoIso);
+		expect(dias).toEqual(["2027-12-23", "2027-12-24", "2027-12-27", "2027-12-28"]);
+	});
+
+	it("devolve lista vazia quando o início passa do fim", () => {
+		expect(listarDiasUteis(criarData(2028, 2, 15), criarData(2028, 2, 14))).toEqual([]);
 	});
 });

@@ -80,14 +80,18 @@ export function enesimoDiaUtilDoMes(ano: number, mes: number, posicao: number, o
 	throw new RangeError(`O mês ${mes}/${ano} não tem ${posicao} dias úteis.`);
 }
 
-export function diasUteisAte(inicio: Date, fim: Date, opcoes: OpcoesDoCalendario = {}): number {
-	let contagem = 0;
+export function listarDiasUteis(inicio: Date, fim: Date, opcoes: OpcoesDoCalendario = {}): Date[] {
+	const dias: Date[] = [];
 	for (let data = inicio; data.getTime() <= fim.getTime(); data = somarDias(data, 1)) {
 		if (ehDiaUtil(data, opcoes)) {
-			contagem += 1;
+			dias.push(data);
 		}
 	}
-	return contagem;
+	return dias;
+}
+
+export function diasUteisAte(inicio: Date, fim: Date, opcoes: OpcoesDoCalendario = {}): number {
+	return listarDiasUteis(inicio, fim, opcoes).length;
 }
 
 export function diasCorridosAte(inicio: Date, fim: Date): number {

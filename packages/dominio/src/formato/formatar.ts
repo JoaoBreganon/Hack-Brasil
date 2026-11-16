@@ -1,5 +1,6 @@
 const MOEDA = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const DATA_LONGA = new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const DATA_CURTA = new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "short", timeZone: "UTC" });
 
 export function formatarReais(valorEmCentavos: number): string {
 	return MOEDA.format(valorEmCentavos / 100);
@@ -7,4 +8,8 @@ export function formatarReais(valorEmCentavos: number): string {
 
 export function formatarData(data: Date): string {
 	return DATA_LONGA.format(data);
+}
+
+export function formatarDataCurta(data: Date): string {
+	return DATA_CURTA.format(data).replace(" de ", " ").replace(".", "");
 }

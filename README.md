@@ -136,8 +136,9 @@ WORKOS_CLIENT_ID=
 
 ```
 apps/web/              Next.js: área do diretor, painel da secretaria, consulta aberta
-  src/app/             páginas, SEO (robots, sitemap, imagens de compartilhamento)
-  src/components/      componentes de interface e SEO
+  src/app/             páginas (início e /plano), SEO (robots, sitemap, imagens de compartilhamento)
+  src/components/      componentes de interface (plano/, seo/, ui/)
+  src/dados/           monta os dados de cada tela a partir do domínio
   src/config/          dados do site
   src/fontes/          Bricolage Grotesque e Geist, servidas localmente
 convex/                banco, funções e rotinas agendadas

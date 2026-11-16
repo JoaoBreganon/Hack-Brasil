@@ -1,4 +1,5 @@
 import { formatarData, prazoDoExercicio } from "@aloca/dominio";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SITE } from "@/config/site";
@@ -15,6 +16,12 @@ export default function Inicio() {
 					Nenhuma escola perde o que <span className="bg-accent px-1">já é dela</span>.
 				</h1>
 				<p className="mt-6 max-w-xl text-lg text-pretty text-muted-foreground">{SITE.descricao}</p>
+				<Link
+					href="/plano"
+					className="mt-8 inline-flex min-h-11 items-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground transition-transform active:scale-[0.97]"
+				>
+					Ver o plano da escola exemplo
+				</Link>
 			</header>
 
 			{PRAZO && (
