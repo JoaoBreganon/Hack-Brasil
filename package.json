@@ -16,6 +16,7 @@
 		"convex:limpar": "node scripts/limpar-gerados.mjs && prettier --write convex/_generated"
 	},
 	"dependencies": {
+		"@aloca/dominio": "workspace:*",
 		"convex": "^1.50.0"
 	},
 	"devDependencies": {

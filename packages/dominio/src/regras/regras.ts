@@ -1,24 +1,29 @@
 import { FONTES, type Fonte } from "./fontes";
 import { type Cotacao, type Escolha, escolherMenorPreco, ORCAMENTOS_EXIGIDOS } from "../orcamento/orcamento";
 
-export type Categoria = "custeio" | "capital";
+export const CATEGORIAS = ["custeio", "capital"] as const;
+
+export type Categoria = (typeof CATEGORIAS)[number];
 
 export type Saldo = Record<Categoria, number>;
 
-export type TipoDeDespesa =
-	| "material de consumo"
-	| "livro"
-	| "pequeno reparo"
-	| "serviço"
-	| "material permanente"
-	| "pessoal"
-	| "servidor público"
-	| "conta de consumo"
-	| "aluguel"
-	| "assistencial"
-	| "tarifa bancária"
-	| "tributo"
-	| "outro programa do FNDE";
+export const TIPOS_DE_DESPESA = [
+	"material de consumo",
+	"livro",
+	"pequeno reparo",
+	"serviço",
+	"material permanente",
+	"pessoal",
+	"servidor público",
+	"conta de consumo",
+	"aluguel",
+	"assistencial",
+	"tarifa bancária",
+	"tributo",
+	"outro programa do FNDE",
+] as const;
+
+export type TipoDeDespesa = (typeof TIPOS_DE_DESPESA)[number];
 
 export type ItemDeCompra = {
 	id: string;

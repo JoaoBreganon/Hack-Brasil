@@ -3,7 +3,9 @@ import type { SituacaoDoPrazo } from "../prazo/prazo";
 export const DIAS_UTEIS_PARA_FECHAR_UMA_COMPRA = 15;
 export const DIAS_UTEIS_DE_FOLGA = 30;
 
-export type NivelDeRisco = "sem saldo" | "sem prazo" | "em dia" | "atenção" | "urgente" | "perdido";
+export const NIVEIS_DE_RISCO = ["sem saldo", "sem prazo", "em dia", "atenção", "urgente", "perdido"] as const;
+
+export type NivelDeRisco = (typeof NIVEIS_DE_RISCO)[number];
 
 export type Risco = {
 	nivel: NivelDeRisco;

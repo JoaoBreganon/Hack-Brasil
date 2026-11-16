@@ -1,5 +1,9 @@
 import { type Categoria, type ItemDeCompra, type ResultadoDaValidacao, type Saldo, validarItem } from "../regras/regras";
 
+export const STATUS_DO_PLANO = ["rascunho", "aprovado"] as const;
+
+export type StatusDoPlano = (typeof STATUS_DO_PLANO)[number];
+
 export type Necessidade = ItemDeCompra & {
 	prioridade: number;
 };
