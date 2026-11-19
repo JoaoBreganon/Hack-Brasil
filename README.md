@@ -71,17 +71,18 @@ flowchart TD
 |---|---|
 | Frontend | Next.js, Tailwind CSS, shadcn/ui, Recharts |
 | Backend e banco | Convex (dados em tempo real e rotinas agendadas) |
-| Coleta de dados | Firecrawl |
+| Coleta de dados | Consulta pública do PDDE Info (ação Convex) e Firecrawl (lojas) |
 | IA | LLM com saída estruturada e validação por regras |
 | Documentos | React-PDF |
 | Login | WorkOS |
 | E-mail | Resend + React Email |
+| WhatsApp e SMS | Nvoip (template aprovado pela Meta, SMS como reserva) |
 | Hospedagem | Vercel |
 | Testes | Vitest e Playwright |
 
 ## 📊 Fontes de dados
 
-* **PDDE Info (FNDE):** saldos, repasses e pendências por escola.
+* **PDDE Info (FNDE):** saldos, repasses e pendências por escola, na consulta pública por código INEP. O PDDE Info não separa o saldo entre custeio e capital, então a divisão segue a proporção dos repasses do ano. Se o site estiver fora do ar, o saldo entra por planilha CSV.
 * **Censo Escolar e Catálogo de Escolas (INEP):** infraestrutura e dados de cada escola.
 * **Lojas on-line:** preços para a pesquisa de três orçamentos.
 
@@ -150,6 +151,8 @@ packages/dominio/      regras do PDDE, sem dependências externas e com testes
   src/orcamento/       três orçamentos e menor preço
   src/plano/           plano de compra dentro do saldo de cada categoria
   src/formato/         moeda e data em pt-BR
+  src/importacao/      leitura do PDDE Info e importação de saldos por CSV
+  src/alerta/          template do WhatsApp e SMS de reserva do alerta de prazo
   src/exemplos/        escola exemplo da demo
 ```
 

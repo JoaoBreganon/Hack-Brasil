@@ -28,6 +28,7 @@ export default function PaginaDoPlano() {
 						saldo={escola.saldo}
 						noPlano={plano.totalPorCategoria}
 						fonte={escola.fonteDoSaldo}
+						enderecoDaFonte={escola.enderecoDaFonte}
 					/>
 				</div>
 				<TabelaDoPlano plano={plano} />
@@ -36,7 +37,9 @@ export default function PaginaDoPlano() {
 					<p className="font-heading text-xl font-bold tracking-tight">
 						Quem decide é sempre a escola. <span className="text-muted-foreground">O Aloca sugere, a APM aprova em ata.</span>
 					</p>
-					<p className="text-xs text-muted-foreground">Dados de exemplo · Hack Brasil 2026</p>
+					<p className="text-xs text-muted-foreground">
+						Escola e saldo reais do PDDE Info · prazo simulado, plano e orçamentos de exemplo · Hack Brasil 2026
+					</p>
 				</footer>
 			</main>
 		</>

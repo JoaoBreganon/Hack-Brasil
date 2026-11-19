@@ -2,13 +2,15 @@ import type { Necessidade } from "../plano/plano";
 import { dividirPeloPercentualPadrao } from "../regras/regras";
 
 export const ESCOLA_EXEMPLO = {
-	nome: "Escola Municipal Aurora",
-	codigoInep: "00000000",
-	municipio: "Exemplo (dados fictícios)",
+	nome: "EMEF Professora Teruyo Kikuta",
+	codigoInep: "35079923",
+	municipio: "Adamantina/SP",
 	exercicio: 2027,
-	saldoTotalEmCentavos: 1_843_000,
-	saldo: dividirPeloPercentualPadrao(1_843_000),
-	fonteDoSaldo: "Exemplo. Na versão real, PDDE Info (FNDE), com data e hora da coleta.",
+	saldoTotalEmCentavos: 1_979_915,
+	saldo: dividirPeloPercentualPadrao(1_979_915),
+	fonteDoSaldo:
+		"Saldo real das contas do PDDE em outubro de 2026, PDDE Info (FNDE), coletado em 18 de novembro de 2026. O prazo é simulado para o exercício de 2027.",
+	enderecoDaFonte: "https://www.fnde.gov.br/pddeinfo/pddeinfo/escola/consultar?ano=2026&co_escola=35079923&consultar=Consultar",
 };
 
 export const NECESSIDADES_EXEMPLO: Necessidade[] = [

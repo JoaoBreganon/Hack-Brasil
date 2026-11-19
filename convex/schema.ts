@@ -6,25 +6,29 @@ function umDos<T extends string>(valores: readonly T[]) {
 	return v.union(...valores.map((valor) => v.literal(valor)));
 }
 
-const fonteDoDado = v.object({
+export const camposDaEscola = {
+	codigoInep: v.string(),
+	nome: v.string(),
+	municipio: v.string(),
+};
+
+export const saldoPorCategoria = v.object({
+	custeio: v.number(),
+	capital: v.number(),
+});
+
+export const fonteDoDado = v.object({
 	nome: v.string(),
 	endereco: v.optional(v.string()),
 });
 
 export default defineSchema({
-	escola: defineTable({
-		codigoInep: v.string(),
-		nome: v.string(),
-		municipio: v.string(),
-	}).index("por_codigo_inep", ["codigoInep"]),
+	escola: defineTable(camposDaEscola).index("por_codigo_inep", ["codigoInep"]),
 
 	saldo: defineTable({
 		escolaId: v.id("escola"),
 		exercicio: v.number(),
-		saldo: v.object({
-			custeio: v.number(),
-			capital: v.number(),
-		}),
+		saldo: saldoPorCategoria,
 		fonte: fonteDoDado,
 		coletadoEm: v.number(),
 	}).index("por_escola_exercicio_coleta", ["escolaId", "exercicio", "coletadoEm"]),

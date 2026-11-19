@@ -10,9 +10,10 @@ type Propriedades = {
 	saldo: Saldo;
 	noPlano: Saldo;
 	fonte: string;
+	enderecoDaFonte?: string;
 };
 
-export function CartaoDoSaldo({ saldoTotal, saldo, noPlano, fonte }: Propriedades) {
+export function CartaoDoSaldo({ saldoTotal, saldo, noPlano, fonte, enderecoDaFonte }: Propriedades) {
 	return (
 		<section aria-labelledby="titulo-saldo" className="flex min-w-0 flex-[1_1_340px] flex-col gap-6 rounded-[20px] bg-papel p-6 sm:p-8">
 			<div>
@@ -22,7 +23,15 @@ export function CartaoDoSaldo({ saldoTotal, saldo, noPlano, fonte }: Propriedade
 				<p className="mt-0.5 font-heading text-4xl leading-tight sm:text-5xl font-extrabold tracking-tight tabular-nums">
 					{formatarReais(saldoTotal)}
 				</p>
-				<p className="mt-1.5 text-xs text-muted-foreground">{fonte}</p>
+				<p className="mt-1.5 text-xs text-muted-foreground">
+					{enderecoDaFonte ? (
+						<a href={enderecoDaFonte} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
+							{fonte}
+						</a>
+					) : (
+						fonte
+					)}
+				</p>
 			</div>
 
 			{CATEGORIAS.map(({ chave, rotulo }) => {

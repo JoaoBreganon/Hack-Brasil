@@ -24,7 +24,7 @@ describe("montarPlanoDeCompra", () => {
 		expect(plano.itens.map((entrada) => entrada.necessidade.id)).toEqual(["livros", "roteador", "material-pedagogico", "janelas"]);
 		expect(plano.foraDoPlano.map((entrada) => entrada.necessidade.id)).toEqual(["projetor", "conta-de-luz"]);
 		expect(plano.totalPorCategoria).toEqual({ custeio: 1_085_000, capital: 258_000 });
-		expect(plano.saldoRestante).toEqual({ custeio: 389_400, capital: 110_600 });
+		expect(plano.saldoRestante).toEqual({ custeio: 498_932, capital: 137_983 });
 	});
 
 	it("nunca deixa o saldo de uma categoria negativo", () => {
