@@ -1,4 +1,6 @@
-import { type Categoria, type ItemDeCompra, type ResultadoDaValidacao, type Saldo, validarItem } from "../regras/regras";
+import { formatarReais } from "../formato/formatar";
+import { ORCAMENTOS_EXIGIDOS } from "../orcamento/orcamento";
+import { type Categoria, type ItemDeCompra, REGRAS_POR_TIPO, type ResultadoDaValidacao, type Saldo, validarItem } from "../regras/regras";
 
 export const STATUS_DO_PLANO = ["rascunho", "aprovado"] as const;
 
@@ -40,4 +42,19 @@ export function montarPlanoDeCompra(saldo: Saldo, necessidades: Necessidade[]): 
 	}
 
 	return { itens, foraDoPlano, totalPorCategoria, saldoRestante };
+}
+
+export function motivoForaDoPlano({ necessidade, validacao }: ItemDoPlano, saldoRestante: Saldo): string {
+	const regra = REGRAS_POR_TIPO[necessidade.tipo];
+	if (!regra.permitido) {
+		return `O PDDE não paga ${necessidade.tipo}`;
+	}
+	const orcamentos = validacao.escolha?.cotacoesOrdenadas.length ?? 0;
+	if (orcamentos === 0) {
+		return "Sem orçamentos ainda";
+	}
+	if (orcamentos < ORCAMENTOS_EXIGIDOS && !necessidade.justificativaParaMenosOrcamentos) {
+		return `Faltam ${ORCAMENTOS_EXIGIDOS - orcamentos} orçamentos ou a justificativa`;
+	}
+	return `Falta saldo de ${regra.categoria}: sobram ${formatarReais(saldoRestante[regra.categoria])}`;
 }

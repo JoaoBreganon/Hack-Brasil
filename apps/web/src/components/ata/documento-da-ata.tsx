@@ -1,148 +1,82 @@
-import { type Ata, formatarData, formatarReais } from "@aloca/dominio";
+import { type Ata, type Escola, formatarData, formatarReais } from "@aloca/dominio";
 import { cn } from "cn";
-import { SeloDeCategoria } from "@/components/plano/selo-de-categoria";
 
 type Propriedades = {
 	ata: Ata;
-	municipio: string;
+	escola: Escola;
 	data: Date;
 	rascunho: boolean;
 };
 
-const CABECALHO =
-	"border-b border-tinta/20 py-2 pr-3 text-left text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase last:pr-0";
-const CELULA = "border-b border-pauta py-2.5 pr-3 align-top last:pr-0";
-
-export function DocumentoDaAta({ ata, municipio, data, rascunho }: Propriedades) {
+export function DocumentoDaAta({ ata, escola, data, rascunho }: Propriedades) {
 	return (
 		<article
 			aria-label={ata.titulo}
-			className="relative mx-auto w-full max-w-[860px] overflow-hidden rounded-[6px] bg-white px-6 py-10 text-[15px] leading-relaxed shadow-[0_0_0_1px_var(--pauta),0_24px_48px_-24px_rgb(11_15_28/0.25)] sm:px-14 sm:py-14 print:max-w-none print:rounded-none print:p-0 print:shadow-none"
+			className="mx-auto w-full max-w-[720px] rounded bg-card p-7 text-[15px] leading-relaxed shadow-[0_0_0_1px_var(--border),0_18px_40px_-24px_rgb(11_15_28/0.25)] sm:p-14 print:max-w-none print:p-0 print:shadow-none"
 		>
-			{rascunho && (
-				<span
-					aria-hidden="true"
-					className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 -rotate-[18deg] rounded-xl border-[6px] border-perigo/25 px-8 py-2 font-heading text-7xl font-extrabold tracking-[0.18em] text-perigo/25 select-none sm:text-8xl"
-				>
-					RASCUNHO
-				</span>
-			)}
-			<header className="flex flex-col gap-2 border-b-2 border-tinta pb-5">
-				<p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-					Associação de Pais e Mestres · Unidade Executora do PDDE
-				</p>
-				<h2 className="font-heading text-2xl leading-tight font-extrabold tracking-tight text-balance sm:text-[28px]">
-					{ata.titulo}
-				</h2>
-				{rascunho && <p className="text-sm font-semibold text-perigo">Rascunho: o plano ainda não foi aprovado.</p>}
-			</header>
+			<h2 className="font-heading text-[22px] leading-snug font-bold tracking-tight text-balance">{ata.titulo}</h2>
+			<p className="mt-1 text-sm text-muted-foreground">
+				APM da {escola.nome} · INEP {escola.codigoInep} · {escola.municipio}
+			</p>
+			{rascunho && <p className="mt-3 text-sm font-semibold text-perigo">Rascunho: o plano ainda não foi aprovado.</p>}
 
-			<div className="mt-6 flex flex-col gap-4 text-pretty">
+			<div className="mt-6 flex flex-col gap-3 text-pretty">
 				<p>{ata.abertura}</p>
 				<p>{ata.deliberacao}</p>
 			</div>
 
-			<section aria-labelledby="titulo-itens-da-ata" className="mt-8">
-				<h3 id="titulo-itens-da-ata" className="font-heading text-lg font-bold">
-					Itens aprovados
-				</h3>
-				<div className="mt-3 overflow-x-auto">
-					<table className="w-full min-w-[620px] border-collapse text-sm">
-						<thead>
-							<tr>
-								<th scope="col" className={CABECALHO}>
-									Item
-								</th>
-								<th scope="col" className={CABECALHO}>
-									Fornecedor
-								</th>
-								<th scope="col" className={cn(CABECALHO, "text-right")}>
-									Qtd.
-								</th>
-								<th scope="col" className={cn(CABECALHO, "text-right")}>
-									Unitário
-								</th>
-								<th scope="col" className={cn(CABECALHO, "text-right")}>
-									Total
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							{ata.itens.map((item) => (
-								<tr key={item.descricao}>
-									<td className={CELULA}>
-										<span className="flex flex-col gap-1">
-											<span className="font-medium">{item.descricao}</span>
-											<span className="flex items-center gap-2 text-xs text-muted-foreground">
-												<SeloDeCategoria categoria={item.categoria} />
-												{item.tipo}
-											</span>
-										</span>
-									</td>
-									<td className={CELULA}>{item.fornecedor}</td>
-									<td className={cn(CELULA, "text-right tabular-nums")}>{item.quantidade}</td>
-									<td className={cn(CELULA, "text-right tabular-nums")}>{formatarReais(item.valorUnitarioEmCentavos)}</td>
-									<td className={cn(CELULA, "text-right font-semibold tabular-nums")}>
-										{formatarReais(item.totalEmCentavos)}
-									</td>
-								</tr>
-							))}
-						</tbody>
-						<tfoot>
-							<tr>
-								<td colSpan={4} className="pt-3 pr-3 text-right text-sm text-muted-foreground">
-									Custeio {formatarReais(ata.total.custeio)} · Capital {formatarReais(ata.total.capital)} · Total
-								</td>
-								<td className="pt-3 text-right font-heading text-lg font-extrabold tabular-nums">
-									{formatarReais(ata.total.geral)}
-								</td>
-							</tr>
-						</tfoot>
-					</table>
-				</div>
-			</section>
+			<ul className="mt-6 border-t border-regra">
+				{ata.itens.map((item) => (
+					<li key={item.descricao} className="flex justify-between gap-4 border-b border-regra py-2.5 tabular-nums">
+						<span>
+							{item.descricao}
+							{item.quantidade > 1 && `, ${item.quantidade} unidades`}, {item.fornecedor}
+						</span>
+						<span className="shrink-0">{formatarReais(item.totalEmCentavos)}</span>
+					</li>
+				))}
+				<li className="flex justify-between gap-4 py-2.5 font-semibold tabular-nums">
+					<span>Total</span>
+					<span>{formatarReais(ata.total.geral)}</span>
+				</li>
+			</ul>
 
-			<section aria-labelledby="titulo-mapa" className="mt-10 break-inside-avoid-page">
-				<h3 id="titulo-mapa" className="font-heading text-lg font-bold">
+			<section aria-labelledby="titulo-mapa" className="mt-8 break-inside-avoid">
+				<h3 id="titulo-mapa" className="font-semibold">
 					Mapa de preços
 				</h3>
-				<p className="text-sm text-muted-foreground">Orçamentos de cada item, do menor para o maior. O vencedor está marcado.</p>
-				<ul className="mt-3 flex flex-col">
+				<ul className="mt-2 flex flex-col gap-2 text-sm">
 					{ata.mapaDePrecos.map((linha) => (
-						<li key={linha.descricao} className="flex flex-col gap-1.5 border-b border-pauta py-3 last:border-b-0">
-							<span className="font-medium">{linha.descricao}</span>
-							<ol className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-								{linha.cotacoes.map((cotacao, posicao) => (
-									<li
-										key={`${posicao}-${cotacao.fornecedor}`}
-										className={cn("tabular-nums", cotacao.vencedora ? "font-semibold" : "text-muted-foreground")}
-									>
-										{posicao + 1}. {cotacao.fornecedor}: {formatarReais(cotacao.valorEmCentavos)}
-										{cotacao.vencedora && " (vencedor)"}
-									</li>
-								))}
-							</ol>
+						<li key={linha.descricao}>
+							<span className="font-medium">{linha.descricao}: </span>
+							{linha.cotacoes.map((cotacao, posicao) => (
+								<span
+									key={`${posicao}-${cotacao.fornecedor}`}
+									className={cn("tabular-nums", !cotacao.vencedora && "text-muted-foreground")}
+								>
+									{posicao > 0 && " · "}
+									{cotacao.fornecedor} {formatarReais(cotacao.valorEmCentavos)}
+									{cotacao.vencedora && " (escolhido)"}
+								</span>
+							))}
 							{linha.justificativa && (
-								<p className="text-sm text-muted-foreground">
-									Justificativa para menos de três orçamentos: {linha.justificativa}
-								</p>
+								<span className="block text-muted-foreground">Menos de três orçamentos: {linha.justificativa}</span>
 							)}
 						</li>
 					))}
 				</ul>
 			</section>
 
-			<p className="mt-10">{ata.encerramento}</p>
-			<p className="mt-4">
-				{municipio}, {formatarData(data)}.
+			<p className="mt-8">{ata.encerramento}</p>
+			<p className="mt-2">
+				{escola.municipio}, {formatarData(data)}.
 			</p>
 
-			<div className="mt-14 grid gap-x-12 gap-y-14 sm:grid-cols-2 print:grid-cols-2">
+			<div className="mt-14 grid grid-cols-2 gap-x-10 gap-y-12 text-[13px]">
 				{ata.assinaturas.map((assinatura) => (
-					<div key={assinatura} className="flex flex-col gap-2 border-t border-tinta pt-2">
-						<span className="text-sm font-medium">{assinatura}</span>
-						<span className="text-xs text-muted-foreground">Nome e assinatura</span>
-					</div>
+					<span key={assinatura} className="border-t border-foreground pt-1.5">
+						{assinatura}
+					</span>
 				))}
 			</div>
 		</article>

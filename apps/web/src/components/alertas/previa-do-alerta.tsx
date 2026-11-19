@@ -25,7 +25,7 @@ export function PreviaDoAlerta({ codigoInep, nomeDaEscola, prazo, saldoEmRiscoEm
 		if (resultado) {
 			toast[resultado.falhas > 0 ? "warning" : "success"](
 				resultado.falhas > 0
-					? `${resultado.enviados} enviados e ${resultado.falhas} com falha. Veja o histórico.`
+					? `${resultado.enviados} enviados e ${resultado.falhas} com falha.`
 					: `Alerta enviado para ${resultado.enviados} celular(es).`,
 			);
 		}
@@ -46,26 +46,18 @@ export function PreviaDoAlerta({ codigoInep, nomeDaEscola, prazo, saldoEmRiscoEm
 	);
 
 	return (
-		<section aria-labelledby="titulo-previa" className="flex flex-col gap-4">
-			<h2 id="titulo-previa" className="font-heading text-xl font-bold tracking-tight">
+		<section aria-labelledby="titulo-previa" className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
+			<h2 id="titulo-previa" className="font-semibold">
 				A mensagem
 			</h2>
-			<div className="rounded-[20px] bg-papel p-4 sm:p-6">
-				<figure className="ml-auto max-w-[420px] rounded-2xl rounded-tr-sm bg-white px-4 py-3 text-[15px] leading-relaxed shadow-[0_1px_1px_rgb(11_15_28/0.12)]">
-					<figcaption className="mb-1.5 font-semibold">{TEMPLATE_DO_WHATSAPP.cabecalho}</figcaption>
-					<p className="whitespace-pre-line text-pretty">{mensagem}</p>
-					<p className="mt-2 text-xs text-muted-foreground">{TEMPLATE_DO_WHATSAPP.rodape}</p>
-				</figure>
-			</div>
-			<div className="flex flex-wrap items-center gap-3">
-				<Button size="lg" onClick={enviarAgora} disabled={enviar.executando}>
-					{enviar.executando ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
-					Enviar um alerta agora
-				</Button>
-				<span className="text-xs text-muted-foreground">
-					Usa a simulação do prazo. O envio automático roda todo dia e avisa uma vez por semana.
-				</span>
-			</div>
+			<figure className="rounded-lg bg-background p-4 text-[15px] leading-relaxed">
+				<figcaption className="mb-1 font-semibold">{TEMPLATE_DO_WHATSAPP.cabecalho}</figcaption>
+				<p className="whitespace-pre-line text-pretty">{mensagem}</p>
+			</figure>
+			<Button variant="secondary" onClick={enviarAgora} disabled={enviar.executando} className="self-start">
+				{enviar.executando ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
+				Enviar um teste agora
+			</Button>
 		</section>
 	);
 }

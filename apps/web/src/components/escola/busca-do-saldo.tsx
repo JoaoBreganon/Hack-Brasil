@@ -10,30 +10,27 @@ import { Spinner } from "@/components/ui/spinner";
 import { useOperacao } from "@/hooks/use-operacao";
 
 export function BuscaDoSaldo({ codigoInep }: { codigoInep: string }) {
-	const consultar = useAction(api.pddeInfo.consultar);
-	const { executar, executando } = useOperacao(consultar);
+	const consultar = useOperacao(useAction(api.pddeInfo.consultar));
 
 	async function buscar() {
-		const resultado = await executar({ codigoInep });
+		const resultado = await consultar.executar({ codigoInep });
 		if (resultado?.aviso) {
 			toast.warning(resultado.aviso);
 		}
 	}
 
 	return (
-		<Empty className="mx-auto max-w-xl rounded-[20px] bg-card py-14 shadow-[0_0_0_1px_var(--pauta)]">
+		<Empty className="rounded-lg border border-border bg-card py-16">
 			<EmptyHeader>
 				<EmptyTitle className="font-heading text-2xl font-bold">
 					<h1>Ainda não temos o saldo desta escola</h1>
 				</EmptyTitle>
-				<EmptyDescription>
-					O Aloca lê o saldo, os repasses e as pendências da escola {codigoInep} na consulta pública do PDDE Info, do FNDE.
-				</EmptyDescription>
+				<EmptyDescription>O Aloca lê o saldo e as pendências da escola {codigoInep} no PDDE Info, do FNDE.</EmptyDescription>
 			</EmptyHeader>
 			<EmptyContent>
-				<Button size="xl" onClick={buscar} disabled={executando}>
-					{executando ? <Spinner data-icon="inline-start" /> : <SearchIcon data-icon="inline-start" />}
-					{executando ? "Lendo o PDDE Info…" : "Buscar o saldo no PDDE Info"}
+				<Button size="lg" onClick={buscar} disabled={consultar.executando}>
+					{consultar.executando ? <Spinner data-icon="inline-start" /> : <SearchIcon data-icon="inline-start" />}
+					{consultar.executando ? "Lendo o PDDE Info…" : "Buscar o saldo"}
 				</Button>
 			</EmptyContent>
 		</Empty>

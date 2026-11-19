@@ -8,10 +8,10 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { enderecoDaEtapa } from "@/config/etapas";
+import { enderecoDaArea } from "@/config/navegacao";
 import { useOperacao } from "@/hooks/use-operacao";
 
 const TAMANHO_DO_INEP = 8;
@@ -26,7 +26,7 @@ export function FormularioDeEntrada() {
 		evento.preventDefault();
 		const codigoInep = codigo.replace(/\D/g, "");
 		if (!ehCodigoInepValido(codigoInep)) {
-			setErro("O código INEP tem 8 dígitos, só números.");
+			setErro("O código INEP tem 8 números.");
 			return;
 		}
 		setErro(undefined);
@@ -35,16 +35,14 @@ export function FormularioDeEntrada() {
 			if (resultado.aviso) {
 				toast.warning(resultado.aviso);
 			}
-			roteador.push(enderecoDaEtapa(resultado.codigoInep, ""));
+			roteador.push(enderecoDaArea(resultado.codigoInep, ""));
 		}
 	}
 
 	return (
 		<form onSubmit={enviar} noValidate className="flex flex-col gap-5">
 			<Field data-invalid={Boolean(erro)}>
-				<FieldLabel htmlFor="codigo-inep" className="text-base">
-					Código INEP da escola
-				</FieldLabel>
+				<FieldLabel htmlFor="codigo-inep">Código INEP</FieldLabel>
 				<Input
 					id="codigo-inep"
 					value={codigo}
@@ -52,15 +50,14 @@ export function FormularioDeEntrada() {
 					inputMode="numeric"
 					autoComplete="off"
 					maxLength={TAMANHO_DO_INEP + 2}
-					placeholder="00000000"
+					placeholder="8 números"
 					aria-invalid={Boolean(erro)}
 					disabled={consultar.executando}
-					className="h-14 rounded-xl px-4 font-heading text-2xl font-bold tracking-[0.12em] tabular-nums placeholder:text-muted-foreground/40 md:text-2xl"
+					className="h-13 text-xl font-semibold tracking-[0.08em] tabular-nums placeholder:font-normal placeholder:tracking-normal md:text-xl"
 				/>
-				<FieldDescription>Está no Censo Escolar e no topo do PDDE Info. São 8 números.</FieldDescription>
 				<FieldError>{erro}</FieldError>
 			</Field>
-			<Button type="submit" size="xl" disabled={consultar.executando}>
+			<Button type="submit" size="lg" disabled={consultar.executando}>
 				{consultar.executando ? <Spinner data-icon="inline-start" /> : null}
 				{consultar.executando ? "Lendo o PDDE Info…" : "Ver o saldo da escola"}
 				{!consultar.executando && <ArrowRightIcon data-icon="inline-end" />}

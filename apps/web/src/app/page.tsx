@@ -2,7 +2,8 @@ import { ESCOLA_EXEMPLO, formatarData, prazoDoExercicio } from "@aloca/dominio";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { enderecoDaEtapa } from "@/config/etapas";
+import { buttonVariants } from "@/components/ui/button";
+import { enderecoDaArea } from "@/config/navegacao";
 import { SITE } from "@/config/site";
 
 const PRIMEIRO_EXERCICIO = 2027;
@@ -12,22 +13,16 @@ export default function Inicio() {
 	return (
 		<main id="conteudo" className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-12 px-6 py-20">
 			<header>
-				<p className="font-heading text-sm font-bold tracking-[0.2em] text-primary uppercase">{SITE.nome}</p>
+				<p className="font-heading text-sm font-bold tracking-[0.2em] text-azul-texto uppercase">{SITE.nome}</p>
 				<h1 className="mt-4 font-heading text-5xl leading-[0.95] font-extrabold tracking-tight text-balance sm:text-6xl">
-					Nenhuma escola perde o que <span className="bg-accent px-1">já é dela</span>.
+					Nenhuma escola perde o que <span className="bg-cantalupo px-1">já é dela</span>.
 				</h1>
 				<p className="mt-6 max-w-xl text-lg text-pretty text-muted-foreground">{SITE.descricao}</p>
 				<div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-					<Link
-						href="/entrar"
-						className="inline-flex min-h-12 items-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground transition-transform active:scale-[0.97]"
-					>
+					<Link href="/entrar" className={buttonVariants({ size: "lg" })}>
 						Começar pelo código INEP
 					</Link>
-					<Link
-						href={enderecoDaEtapa(ESCOLA_EXEMPLO.codigoInep, "")}
-						className="font-semibold text-primary underline-offset-2 hover:underline"
-					>
+					<Link href={enderecoDaArea(ESCOLA_EXEMPLO.codigoInep, "")} className="font-semibold text-azul-texto hover:underline">
 						Ver a escola de demonstração
 					</Link>
 				</div>

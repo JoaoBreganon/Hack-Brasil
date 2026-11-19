@@ -149,10 +149,11 @@ Sem a instância e o template do WhatsApp, o alerta vai só por SMS.
 apps/web/              Next.js: área do diretor
   src/app/             páginas e SEO (robots, sitemap, imagens de compartilhamento)
     entrar/            entrada pelo código INEP
-    escola/[inep]/     saldo e prazo, necessidades, orcamentos, plano, ata e alertas
-  src/components/      uma pasta por tela (painel/, necessidades/, orcamentos/, plano/, ata/, alertas/, entrar/), escola/ com o que as telas dividem, seo/ e ui/ (shadcn)
+    escola/[inep]/     início (saldo e calendário do prazo), compras, plano, ata e alertas
+  src/components/      uma pasta por tela (inicio/, compras/, plano/, ata/, alertas/, entrar/), escola/ com o menu e o que as telas dividem, calendario/, seo/ e ui/ (shadcn)
   src/hooks/           painel da escola vindo do Convex e operações com aviso de erro
-  src/config/          dados do site e etapas do fluxo
+  src/lib/             próximo passo do diretor e mensagens de erro
+  src/config/          dados do site e áreas do menu
   src/fontes/          Bricolage Grotesque e Geist, servidas localmente
 convex/                banco, funções e rotinas agendadas
   lib/                 Firecrawl, Nvoip, requisição com tempo limite e regras do plano
@@ -160,7 +161,7 @@ convex/                banco, funções e rotinas agendadas
   painel.ts            tudo o que as telas da escola mostram, numa consulta só
   itens.ts, orcamentos.ts, planos.ts, precos.ts, contatos.ts, alertas.ts, crons.ts
 packages/dominio/      regras do PDDE, sem dependências externas e com testes
-  src/calendario/      dias úteis, feriados nacionais e Carnaval
+  src/calendario/      dias úteis, feriados nacionais, Carnaval e os meses do calendário do prazo
   src/prazo/           10º dia útil de fevereiro e estorno
   src/risco/           nível de risco de perder o saldo
   src/regras/          o que pode e o que não pode ser comprado, com a norma citada

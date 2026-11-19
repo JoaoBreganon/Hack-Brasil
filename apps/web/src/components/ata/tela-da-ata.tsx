@@ -1,13 +1,13 @@
 "use client";
 
 import { montarAta } from "@aloca/dominio";
-import { PrinterIcon } from "lucide-react";
+import { ArrowRightIcon, PrinterIcon } from "lucide-react";
 import Link from "next/link";
-import { CabecalhoDaEtapa } from "@/components/escola/cabecalho-da-etapa";
+import { CabecalhoDaPagina } from "@/components/escola/cabecalho-da-pagina";
 import { PainelCarregado } from "@/components/escola/painel-carregado";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { enderecoDaEtapa, ETAPAS } from "@/config/etapas";
+import { enderecoDaArea } from "@/config/navegacao";
 import { DocumentoDaAta } from "./documento-da-ata";
 
 function imprimir() {
@@ -20,50 +20,42 @@ export function TelaDaAta() {
 			{({ codigoInep, dados, derivados }) => {
 				if (derivados.plano.itens.length === 0) {
 					return (
-						<Empty className="rounded-[20px] border border-dashed border-border py-14">
-							<EmptyHeader>
-								<EmptyTitle className="font-heading text-xl font-bold">A ata sai do plano de compra</EmptyTitle>
-								<EmptyDescription>Monte e aprove o plano para gerar a ata e o mapa de preços.</EmptyDescription>
-							</EmptyHeader>
-							<EmptyContent>
-								<Link
-									href={enderecoDaEtapa(codigoInep, ETAPAS[3].caminho)}
-									className="font-semibold text-primary underline-offset-2 hover:underline"
-								>
-									Ir para o plano de compra
-								</Link>
-							</EmptyContent>
-						</Empty>
+						<>
+							<CabecalhoDaPagina titulo="Ata da APM" frase="A ata sai do plano de compra aprovado." />
+							<Empty className="rounded-lg border border-border bg-card py-14">
+								<EmptyHeader>
+									<EmptyTitle className="text-lg font-semibold">Ainda não há o que aprovar</EmptyTitle>
+									<EmptyDescription>Monte o plano de compra para gerar a ata e o mapa de preços.</EmptyDescription>
+								</EmptyHeader>
+								<EmptyContent>
+									<Link href={enderecoDaArea(codigoInep, "plano")} className={buttonVariants()}>
+										Abrir o plano
+										<ArrowRightIcon data-icon="inline-end" />
+									</Link>
+								</EmptyContent>
+							</Empty>
+						</>
 					);
 				}
-				const ata = montarAta({
-					escola: dados.escola,
-					exercicio: derivados.prazo.situacao.exercicio,
-					plano: derivados.plano,
-					data: derivados.prazo.hoje,
-				});
+				const { situacao, hoje } = derivados.prazo;
+				const ata = montarAta({ escola: dados.escola, exercicio: situacao.exercicio, plano: derivados.plano, data: hoje });
 				return (
 					<>
-						<CabecalhoDaEtapa
+						<CabecalhoDaPagina
 							titulo="Ata da APM"
-							descricao={
+							frase={
 								derivados.aprovado
-									? "Imprima, leia na reunião e colha as assinaturas. Na janela de impressão, escolha salvar em PDF para guardar uma cópia."
-									: "Este é um rascunho. Aprove o plano para tirar a marca d’água antes de imprimir."
+									? "Leve impressa para a reunião e colha as assinaturas."
+									: "Rascunho: aprove o plano antes de imprimir a versão final."
 							}
 							acoes={
-								<Button size="xl" onClick={imprimir}>
+								<Button onClick={imprimir}>
 									<PrinterIcon data-icon="inline-start" />
 									Imprimir ou salvar em PDF
 								</Button>
 							}
 						/>
-						<DocumentoDaAta
-							ata={ata}
-							municipio={dados.escola.municipio}
-							data={derivados.prazo.hoje}
-							rascunho={!derivados.aprovado}
-						/>
+						<DocumentoDaAta ata={ata} escola={dados.escola} data={hoje} rascunho={!derivados.aprovado} />
 					</>
 				);
 			}}

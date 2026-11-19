@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { TelaDoPainel } from "@/components/painel/tela-do-painel";
+import { TelaDeInicio } from "@/components/inicio/tela-de-inicio";
 
 export const metadata: Metadata = {
-	title: "Saldo e prazo",
-	description: "Saldo do PDDE, dias úteis até o prazo de uso e pendências da escola no PDDE Info.",
+	title: "Início",
+	description: "Saldo do PDDE da escola, dias úteis até o prazo de uso e o próximo passo para não perder o dinheiro.",
 };
 
-export default function PaginaDoPainel() {
-	return <TelaDoPainel />;
+export default function PaginaDeInicio() {
+	return <TelaDeInicio />;
 }

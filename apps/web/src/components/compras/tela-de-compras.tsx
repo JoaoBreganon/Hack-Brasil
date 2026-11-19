@@ -1,0 +1,125 @@
+"use client";
+
+import { ORCAMENTOS_EXIGIDOS, REGRAS_POR_TIPO } from "@aloca/dominio";
+import { PlusIcon } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { cn } from "cn";
+import { CabecalhoDaPagina } from "@/components/escola/cabecalho-da-pagina";
+import { PainelCarregado } from "@/components/escola/painel-carregado";
+import { buttonVariants } from "@/components/ui/button";
+import { enderecoDaArea, ITEM_NOVO } from "@/config/navegacao";
+import type { ItemDoPainel } from "@/hooks/use-painel-da-escola";
+import { FormularioDeItem } from "./formulario-de-item";
+import { ListaVazia } from "./lista-vazia";
+import { PainelDoItem } from "./painel-do-item";
+import { TabelaDeItens } from "./tabela-de-itens";
+
+type Filtro = "todos" | "faltam" | "fora";
+
+function faltamOrcamentos({ tipo, orcamentos, justificativa }: ItemDoPainel): boolean {
+	return REGRAS_POR_TIPO[tipo].permitido && orcamentos.length < ORCAMENTOS_EXIGIDOS && !justificativa;
+}
+
+export function TelaDeCompras() {
+	const selecionado = useSearchParams().get("item");
+	const [filtro, setFiltro] = useState<Filtro>("todos");
+
+	return (
+		<PainelCarregado>
+			{({ codigoInep, dados, derivados }) => {
+				const foraDoPlano = new Set(derivados.plano.foraDoPlano.map(({ necessidade }) => necessidade.id));
+				const ordenados = [...dados.itens].sort(
+					(a, b) => a.prioridade - b.prioridade || a.descricao.localeCompare(b.descricao, "pt-BR"),
+				);
+				const filtros: { chave: Filtro; rotulo: string; itens: ItemDoPainel[] }[] = [
+					{ chave: "todos", rotulo: "Todos", itens: ordenados },
+					{ chave: "faltam", rotulo: "Faltam orçamentos", itens: ordenados.filter(faltamOrcamentos) },
+					{ chave: "fora", rotulo: "Fora do plano", itens: ordenados.filter(({ _id }) => foraDoPlano.has(_id)) },
+				];
+				const visiveis = filtros.find(({ chave }) => chave === filtro)?.itens ?? ordenados;
+				const itemAberto = dados.itens.find(({ _id }) => _id === selecionado);
+				const novo = selecionado === ITEM_NOVO;
+				const proximaPrioridade = dados.itens.reduce((maior, { prioridade }) => Math.max(maior, prioridade), 0) + 1;
+				return (
+					<>
+						<CabecalhoDaPagina
+							titulo="Compras"
+							frase="O que a escola precisa e os orçamentos de cada item."
+							acoes={
+								!derivados.aprovado && (
+									<Link
+										href={enderecoDaArea(codigoInep, "compras", { item: ITEM_NOVO })}
+										scroll={false}
+										className={buttonVariants()}
+									>
+										<PlusIcon data-icon="inline-start" />
+										Novo item
+									</Link>
+								)
+							}
+						/>
+						{derivados.aprovado && (
+							<p className="rounded-lg bg-pilula px-4 py-3">
+								O plano foi aprovado, então a lista está travada.{" "}
+								<Link href={enderecoDaArea(codigoInep, "plano")} className="font-semibold text-azul-texto hover:underline">
+									Reabrir no plano
+								</Link>
+							</p>
+						)}
+						{dados.itens.length === 0 && !novo ? (
+							<ListaVazia codigoInep={codigoInep} />
+						) : (
+							<>
+								<div role="group" aria-label="Filtrar itens" className="flex flex-wrap gap-1">
+									{filtros.map(({ chave, rotulo, itens }) => (
+										<button
+											key={chave}
+											type="button"
+											aria-pressed={filtro === chave}
+											onClick={() => setFiltro(chave)}
+											className={cn(
+												"inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm transition-colors",
+												filtro === chave
+													? "border-border bg-card font-semibold"
+													: "border-transparent text-muted-foreground hover:text-foreground",
+											)}
+										>
+											{rotulo}
+											<span className="font-normal text-muted-foreground tabular-nums">{itens.length}</span>
+										</button>
+									))}
+								</div>
+								<div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+									<TabelaDeItens
+										codigoInep={codigoInep}
+										itens={visiveis}
+										selecionado={selecionado}
+										foraDoPlano={foraDoPlano}
+									/>
+									{(itemAberto || novo) && (
+										<div className="order-first lg:sticky lg:top-8 lg:order-none">
+											{novo ? (
+												<FormularioDeItem codigoInep={codigoInep} proximaPrioridade={proximaPrioridade} />
+											) : (
+												itemAberto && (
+													<PainelDoItem
+														key={itemAberto._id}
+														codigoInep={codigoInep}
+														item={itemAberto}
+														bloqueado={derivados.aprovado}
+													/>
+												)
+											)}
+										</div>
+									)}
+								</div>
+							</>
+						)}
+					</>
+				);
+			}}
+		</PainelCarregado>
+	);
+}

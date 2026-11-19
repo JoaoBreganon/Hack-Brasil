@@ -3,15 +3,16 @@
 import { LIMITES, type NovaNecessidade, REGRAS_POR_TIPO, TIPOS_DE_DESPESA, type TipoDeDespesa, validarNecessidade } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
-import { PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/components/ui/native-select";
 import { Spinner } from "@/components/ui/spinner";
+import { enderecoDaArea } from "@/config/navegacao";
 import { useOperacao } from "@/hooks/use-operacao";
+import { FecharPainel } from "./fechar-painel";
 
 const PERMITIDOS = TIPOS_DE_DESPESA.filter((tipo) => REGRAS_POR_TIPO[tipo].permitido);
 const VEDADOS = TIPOS_DE_DESPESA.filter((tipo) => !REGRAS_POR_TIPO[tipo].permitido);
@@ -19,40 +20,31 @@ const TIPO_INICIAL: TipoDeDespesa = "material de consumo";
 
 type Erros = Partial<Record<keyof NovaNecessidade, string>>;
 
-type Propriedades = {
-	codigoInep: string;
-	proximaPrioridade: number;
-	bloqueado: boolean;
-};
-
 function explicarTipo(tipo: TipoDeDespesa): string {
 	const regra = REGRAS_POR_TIPO[tipo];
-	return regra.permitido ? `Entra no saldo de ${regra.categoria}.` : "O PDDE não paga este tipo de despesa. O item fica fora do plano.";
+	return regra.permitido ? `Sai do saldo de ${regra.categoria}.` : "O PDDE não paga este tipo de despesa.";
 }
 
-export function FormularioDeNecessidade({ codigoInep, proximaPrioridade, bloqueado }: Propriedades) {
-	const adicionar = useMutation(api.itens.adicionar);
-	const { executar, executando } = useOperacao(adicionar);
+export function FormularioDeItem({ codigoInep, proximaPrioridade }: { codigoInep: string; proximaPrioridade: number }) {
+	const roteador = useRouter();
+	const adicionar = useOperacao(useMutation(api.itens.adicionar));
 	const [descricao, setDescricao] = useState("");
 	const [tipo, setTipo] = useState<TipoDeDespesa>(TIPO_INICIAL);
 	const [quantidade, setQuantidade] = useState("1");
-	const [prioridade, setPrioridade] = useState("");
+	const [prioridade, setPrioridade] = useState(String(proximaPrioridade));
 	const [erros, setErros] = useState<Erros>({});
-	const prioridadeUsada = prioridade === "" ? proximaPrioridade : Number(prioridade);
 
 	async function enviar(evento: FormEvent<HTMLFormElement>) {
 		evento.preventDefault();
-		const validacao = validarNecessidade({ descricao, tipo, quantidade: Number(quantidade), prioridade: prioridadeUsada });
+		const validacao = validarNecessidade({ descricao, tipo, quantidade: Number(quantidade), prioridade: Number(prioridade) });
 		if (!validacao.ok) {
 			setErros(validacao.erros);
 			return;
 		}
 		setErros({});
-		if (await executar({ codigoInep, ...validacao.valor })) {
-			toast.success(`"${validacao.valor.descricao}" entrou na lista.`);
-			setDescricao("");
-			setQuantidade("1");
-			setPrioridade("");
+		const itemId = await adicionar.executar({ codigoInep, ...validacao.valor });
+		if (itemId) {
+			roteador.replace(enderecoDaArea(codigoInep, "compras", { item: itemId }), { scroll: false });
 		}
 	}
 
@@ -61,13 +53,16 @@ export function FormularioDeNecessidade({ codigoInep, proximaPrioridade, bloquea
 			onSubmit={enviar}
 			noValidate
 			aria-labelledby="titulo-novo-item"
-			className="flex min-w-0 flex-[1_1_340px] flex-col gap-6 rounded-[20px] bg-papel p-6 sm:p-7"
+			className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5 sm:p-6"
 		>
-			<h2 id="titulo-novo-item" className="font-heading text-xl font-bold tracking-tight">
-				Novo item
-			</h2>
-			<fieldset disabled={bloqueado || executando} className="contents">
-				<FieldGroup>
+			<div className="flex items-start justify-between gap-3">
+				<h2 id="titulo-novo-item" className="text-lg font-semibold">
+					Novo item
+				</h2>
+				<FecharPainel codigoInep={codigoInep} rotulo="Cancelar o novo item" />
+			</div>
+			<fieldset disabled={adicionar.executando} className="contents">
+				<FieldGroup className="gap-4">
 					<Field data-invalid={Boolean(erros.descricao)}>
 						<FieldLabel htmlFor="descricao">O que comprar</FieldLabel>
 						<Input
@@ -75,20 +70,16 @@ export function FormularioDeNecessidade({ codigoInep, proximaPrioridade, bloquea
 							value={descricao}
 							onChange={(evento) => setDescricao(evento.target.value)}
 							maxLength={LIMITES.descricao.maximo}
-							placeholder="Ex.: livros de literatura para a biblioteca"
+							placeholder="Ex.: cadeiras para o refeitório"
 							aria-invalid={Boolean(erros.descricao)}
 							autoComplete="off"
+							autoFocus
 						/>
 						<FieldError>{erros.descricao}</FieldError>
 					</Field>
-					<Field data-invalid={Boolean(erros.tipo)}>
+					<Field>
 						<FieldLabel htmlFor="tipo">Tipo de despesa</FieldLabel>
-						<NativeSelect
-							id="tipo"
-							value={tipo}
-							onChange={(evento) => setTipo(evento.target.value as TipoDeDespesa)}
-							aria-invalid={Boolean(erros.tipo)}
-						>
+						<NativeSelect id="tipo" value={tipo} onChange={(evento) => setTipo(evento.target.value as TipoDeDespesa)}>
 							<NativeSelectOptGroup label="O PDDE paga">
 								{PERMITIDOS.map((opcao) => (
 									<NativeSelectOption key={opcao} value={opcao}>
@@ -130,7 +121,6 @@ export function FormularioDeNecessidade({ codigoInep, proximaPrioridade, bloquea
 								min={LIMITES.prioridade.minimo}
 								max={LIMITES.prioridade.maximo}
 								value={prioridade}
-								placeholder={String(proximaPrioridade)}
 								onChange={(evento) => setPrioridade(evento.target.value)}
 								aria-invalid={Boolean(erros.prioridade)}
 							/>
@@ -138,9 +128,9 @@ export function FormularioDeNecessidade({ codigoInep, proximaPrioridade, bloquea
 						</Field>
 					</div>
 				</FieldGroup>
-				<Button type="submit" size="lg">
-					{executando ? <Spinner data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}
-					Adicionar à lista
+				<Button type="submit" className="self-start">
+					{adicionar.executando && <Spinner data-icon="inline-start" />}
+					Adicionar item
 				</Button>
 			</fieldset>
 		</form>

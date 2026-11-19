@@ -1,6 +1,7 @@
 export * from "./alerta/alerta";
 export * from "./ata/ata";
 export * from "./calendario/calendario";
+export * from "./calendario/meses";
 export * from "./contato/contato";
 export * from "./escola/escola";
 export * from "./exemplos/escola-exemplo";

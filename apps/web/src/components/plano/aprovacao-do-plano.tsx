@@ -20,7 +20,7 @@ export function AprovacaoDoPlano({ codigoInep, aprovado, podeAprovar }: Propried
 	const reabrir = useOperacao(useMutation(api.planos.reabrir));
 	const [confirmando, setConfirmando] = useState(false);
 
-	async function confirmarAprovacao() {
+	async function confirmar() {
 		if ((await aprovar.executar({ codigoInep })) !== null) {
 			toast.success("Plano aprovado. A ata está pronta.");
 		}
@@ -29,22 +29,22 @@ export function AprovacaoDoPlano({ codigoInep, aprovado, podeAprovar }: Propried
 
 	if (aprovado) {
 		return (
-			<Button variant="outline" size="lg" onClick={() => reabrir.executar({ codigoInep })} disabled={reabrir.executando}>
+			<Button variant="ghost" onClick={() => reabrir.executar({ codigoInep })} disabled={reabrir.executando}>
 				{reabrir.executando ? <Spinner data-icon="inline-start" /> : <LockOpenIcon data-icon="inline-start" />}
-				Reabrir para editar
+				Reabrir
 			</Button>
 		);
 	}
 
 	if (confirmando) {
 		return (
-			<div role="group" aria-label="Confirmar aprovação" className="flex flex-wrap items-center gap-3 rounded-xl bg-papel p-2 pl-4">
-				<span className="text-sm font-medium">A APM aprovou este plano em reunião?</span>
-				<Button size="lg" onClick={confirmarAprovacao} disabled={aprovar.executando}>
+			<div role="group" aria-label="Confirmar a aprovação" className="flex flex-wrap items-center gap-2">
+				<span className="text-sm font-medium">A APM aprovou em reunião?</span>
+				<Button onClick={confirmar} disabled={aprovar.executando}>
 					{aprovar.executando ? <Spinner data-icon="inline-start" /> : <CheckIcon data-icon="inline-start" />}
 					Sim, aprovar
 				</Button>
-				<Button variant="ghost" size="lg" onClick={() => setConfirmando(false)}>
+				<Button variant="ghost" onClick={() => setConfirmando(false)}>
 					Ainda não
 				</Button>
 			</div>
@@ -52,7 +52,7 @@ export function AprovacaoDoPlano({ codigoInep, aprovado, podeAprovar }: Propried
 	}
 
 	return (
-		<Button size="xl" onClick={() => setConfirmando(true)} disabled={!podeAprovar}>
+		<Button onClick={() => setConfirmando(true)} disabled={!podeAprovar}>
 			<CheckIcon data-icon="inline-start" />
 			Aprovar o plano
 		</Button>

@@ -1,31 +1,23 @@
 "use client";
 
-import { type PapelDoContato, ROTULO_DO_PAPEL, normalizarCelular, validarNomeDoContato } from "@aloca/dominio";
+import { normalizarCelular, type PapelDoContato, ROTULO_DO_PAPEL, validarNomeDoContato } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { PencilIcon, SmartphoneIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { useOperacao } from "@/hooks/use-operacao";
 
 type Contato = { _id: Id<"contato">; nome: string; celular: string };
 
-type Propriedades = {
-	codigoInep: string;
-	papel: PapelDoContato;
-	contato: Contato | null;
-	carregando: boolean;
-};
-
 type Erros = { nome?: string; celular?: string };
 
-function FormularioDoContato({ codigoInep, papel, aoSalvar }: { codigoInep: string; papel: PapelDoContato; aoSalvar: () => void }) {
+function FormularioDoContato({ codigoInep, papel, aoTerminar }: { codigoInep: string; papel: PapelDoContato; aoTerminar?: () => void }) {
 	const salvar = useOperacao(useMutation(api.contatos.salvar));
 	const [nome, setNome] = useState("");
 	const [celular, setCelular] = useState("");
@@ -35,23 +27,23 @@ function FormularioDoContato({ codigoInep, papel, aoSalvar }: { codigoInep: stri
 	async function enviar(evento: FormEvent<HTMLFormElement>) {
 		evento.preventDefault();
 		const novosErros: Erros = {
-			...(validarNomeDoContato(nome) ? {} : { nome: "Informe o nome com 2 a 80 caracteres." }),
-			...(normalizarCelular(celular) ? {} : { celular: "Informe um celular com DDD, por exemplo (18) 99123-4567." }),
+			...(validarNomeDoContato(nome) ? {} : { nome: "Informe o nome." }),
+			...(normalizarCelular(celular) ? {} : { celular: "Use um celular com DDD, como (18) 99123-4567." }),
 		};
 		setErros(novosErros);
 		if (Object.keys(novosErros).length > 0) {
 			return;
 		}
 		if (await salvar.executar({ codigoInep, papel, nome, celular })) {
-			toast.success("Celular salvo para os alertas.");
-			aoSalvar();
+			toast.success("Celular salvo.");
+			aoTerminar?.();
 		}
 	}
 
 	return (
-		<form onSubmit={enviar} noValidate className="flex flex-col gap-4">
+		<form onSubmit={enviar} noValidate className="flex flex-col gap-3">
 			<fieldset disabled={salvar.executando} className="contents">
-				<FieldGroup className="grid gap-4 sm:grid-cols-2">
+				<div className="grid gap-3 sm:grid-cols-2">
 					<Field data-invalid={Boolean(erros.nome)}>
 						<FieldLabel htmlFor={`${prefixo}-nome`}>Nome</FieldLabel>
 						<Input
@@ -77,38 +69,37 @@ function FormularioDoContato({ codigoInep, papel, aoSalvar }: { codigoInep: stri
 						/>
 						<FieldError>{erros.celular}</FieldError>
 					</Field>
-				</FieldGroup>
-				<Button type="submit" size="lg" className="self-start">
-					{salvar.executando ? <Spinner data-icon="inline-start" /> : <SmartphoneIcon data-icon="inline-start" />}
-					Salvar celular
-				</Button>
+				</div>
+				<div className="flex gap-2">
+					<Button type="submit" variant="secondary">
+						{salvar.executando && <Spinner data-icon="inline-start" />}
+						Salvar
+					</Button>
+					{aoTerminar && (
+						<Button type="button" variant="ghost" onClick={aoTerminar}>
+							Cancelar
+						</Button>
+					)}
+				</div>
 			</fieldset>
 		</form>
 	);
 }
 
-export function CartaoDoContato({ codigoInep, papel, contato, carregando }: Propriedades) {
+export function ContatoDaEscola({ codigoInep, papel, contato }: { codigoInep: string; papel: PapelDoContato; contato: Contato | null }) {
 	const remover = useOperacao(useMutation(api.contatos.remover));
 	const [editando, setEditando] = useState(false);
-	const tituloId = useId();
 
 	return (
-		<article
-			aria-labelledby={tituloId}
-			className="flex flex-col gap-4 rounded-[20px] bg-card p-5 shadow-[0_0_0_1px_var(--pauta)] sm:p-6"
-		>
-			<h3 id={tituloId} className="text-[13px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-				{ROTULO_DO_PAPEL[papel]}
-			</h3>
-			{carregando ? (
-				<Skeleton className="h-10 w-full" />
-			) : contato && !editando ? (
-				<div className="flex flex-wrap items-center justify-between gap-3">
+		<li className="flex flex-col gap-3 border-t border-regra px-5 py-4">
+			<span className="text-sm text-muted-foreground">{ROTULO_DO_PAPEL[papel]}</span>
+			{contato && !editando ? (
+				<div className="flex items-center justify-between gap-3">
 					<div className="flex flex-col">
 						<span className="font-semibold">{contato.nome}</span>
 						<span className="text-sm text-muted-foreground tabular-nums">{contato.celular}</span>
 					</div>
-					<div className="flex gap-1">
+					<div className="flex">
 						<Button
 							variant="ghost"
 							size="icon"
@@ -122,15 +113,15 @@ export function CartaoDoContato({ codigoInep, papel, contato, carregando }: Prop
 							size="icon"
 							onClick={() => remover.executar({ contatoId: contato._id })}
 							disabled={remover.executando}
-							aria-label={`Remover ${contato.nome} dos alertas`}
+							aria-label={`Tirar ${contato.nome} dos alertas`}
 						>
 							{remover.executando ? <Spinner /> : <Trash2Icon />}
 						</Button>
 					</div>
 				</div>
 			) : (
-				<FormularioDoContato codigoInep={codigoInep} papel={papel} aoSalvar={() => setEditando(false)} />
+				<FormularioDoContato codigoInep={codigoInep} papel={papel} aoTerminar={contato ? () => setEditando(false) : undefined} />
 			)}
-		</article>
+		</li>
 	);
 }

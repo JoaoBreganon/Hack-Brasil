@@ -2,7 +2,6 @@
 
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
-import { Badge } from "@/components/ui/badge";
 
 const DATA_E_HORA = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 
@@ -12,23 +11,22 @@ export function HistoricoDeAlertas({ codigoInep }: { codigoInep: string }) {
 		return null;
 	}
 	return (
-		<section aria-labelledby="titulo-historico" className="flex flex-col gap-3">
-			<h2 id="titulo-historico" className="font-heading text-lg font-bold tracking-tight">
+		<section aria-labelledby="titulo-historico" className="overflow-hidden rounded-lg border border-border bg-card">
+			<h2 id="titulo-historico" className="px-5 py-4 font-semibold">
 				Últimos envios
 			</h2>
-			<ul className="overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--pauta)]">
+			<ul>
 				{alertas.map((alerta) => (
 					<li
 						key={alerta._id}
-						className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-pauta px-5 py-3 text-sm last:border-b-0"
+						className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 border-t border-regra px-5 py-3 text-sm"
 					>
-						<span className="text-muted-foreground tabular-nums">{DATA_E_HORA.format(alerta.criadoEm)}</span>
+						<span className="tabular-nums">{DATA_E_HORA.format(alerta.criadoEm)}</span>
 						{alerta.canal ? (
-							<Badge variant="secondary">{alerta.canal === "whatsapp" ? "WhatsApp" : "SMS"}</Badge>
+							<span className="text-muted-foreground">{alerta.canal === "whatsapp" ? "WhatsApp" : "SMS"}</span>
 						) : (
-							<Badge variant="destructive">falhou</Badge>
+							<span className="text-perigo">Falhou: {alerta.erro}</span>
 						)}
-						{alerta.erro && <span className="w-full text-xs text-perigo">{alerta.erro}</span>}
 					</li>
 				))}
 			</ul>

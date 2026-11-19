@@ -7,20 +7,13 @@ import { useMutation } from "convex/react";
 import { type FormEvent, useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useOperacao } from "@/hooks/use-operacao";
 
-type Propriedades = {
-	itemId: Id<"item">;
-	atual: string | null;
-	bloqueado: boolean;
-};
-
-export function Justificativa({ itemId, atual, bloqueado }: Propriedades) {
-	const justificar = useMutation(api.itens.justificar);
-	const { executar, executando } = useOperacao(justificar);
+export function Justificativa({ itemId, atual, bloqueado }: { itemId: Id<"item">; atual: string | null; bloqueado: boolean }) {
+	const justificar = useOperacao(useMutation(api.itens.justificar));
 	const [texto, setTexto] = useState(atual ?? "");
 	const [erro, setErro] = useState<string | undefined>();
 	const campo = useId();
@@ -33,29 +26,28 @@ export function Justificativa({ itemId, atual, bloqueado }: Propriedades) {
 			return;
 		}
 		setErro(undefined);
-		if ((await executar({ itemId, justificativa: validacao?.valor.justificativa ?? "" })) !== null) {
+		if ((await justificar.executar({ itemId, justificativa: validacao?.valor.justificativa ?? "" })) !== null) {
 			toast.success(validacao ? "Justificativa salva." : "Justificativa removida.");
 		}
 	}
 
 	return (
-		<form onSubmit={enviar} noValidate className="flex flex-col gap-3">
+		<form onSubmit={enviar} noValidate className="flex flex-col gap-2.5 border-t border-regra pt-4">
 			<Field data-invalid={Boolean(erro)}>
-				<FieldLabel htmlFor={campo}>Por que este item tem menos de três orçamentos?</FieldLabel>
+				<FieldLabel htmlFor={campo}>Não há três orçamentos? Explique para a APM</FieldLabel>
 				<Textarea
 					id={campo}
 					value={texto}
 					onChange={(evento) => setTexto(evento.target.value)}
 					maxLength={LIMITES.justificativa.maximo}
-					disabled={bloqueado || executando}
-					placeholder="Ex.: só existe uma vidraçaria que atende a cidade."
+					disabled={bloqueado || justificar.executando}
+					placeholder="Ex.: só uma vidraçaria atende a cidade."
 					aria-invalid={Boolean(erro)}
 				/>
-				<FieldDescription>A APM precisa aprovar esta justificativa na ata.</FieldDescription>
 				<FieldError>{erro}</FieldError>
 			</Field>
-			<Button type="submit" variant="secondary" size="lg" disabled={bloqueado || executando} className="self-start">
-				{executando && <Spinner data-icon="inline-start" />}
+			<Button type="submit" variant="secondary" size="sm" disabled={bloqueado || justificar.executando} className="self-start">
+				{justificar.executando && <Spinner data-icon="inline-start" />}
 				Salvar justificativa
 			</Button>
 		</form>

@@ -12,7 +12,7 @@ type Pronto = {
 	derivados: NonNullable<Painel["derivados"]>;
 };
 
-export function CarregandoEtapa() {
+export function Carregando() {
 	return (
 		<div aria-busy="true" aria-label="Carregando" className="flex flex-col gap-6">
 			<Skeleton className="h-10 w-2/3 max-w-md" />
@@ -28,7 +28,7 @@ export function CarregandoEtapa() {
 export function PainelCarregado({ children }: { children: (painel: Pronto) => ReactNode }) {
 	const { codigoInep, carregando, dados, derivados } = usePainelDaEscola();
 	if (carregando) {
-		return <CarregandoEtapa />;
+		return <Carregando />;
 	}
 	if (!dados?.saldo || !derivados) {
 		return <BuscaDoSaldo codigoInep={codigoInep} />;
