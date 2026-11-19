@@ -40,6 +40,8 @@ type Subcartao = {
 	html: string;
 };
 
+const MAIOR_CODIGO_UNICODE = 0x10ffff;
+const SUFIXO_DO_CODIGO_INEP = /\s*-\s*\d{8}$/;
 const ENTIDADES_DO_HTML: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", ordm: "º", ordf: "ª" };
 const ACENTOS_DO_HTML: Record<string, string> = {
 	acute: "\u0301",
@@ -63,7 +65,7 @@ function textoDoHtml(html: string): string {
 		.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entidade, codigo: string) => {
 			if (codigo.startsWith("#")) {
 				const numero = /^#x/i.test(codigo) ? Number.parseInt(codigo.slice(2), 16) : Number(codigo.slice(1));
-				return String.fromCodePoint(numero);
+				return Number.isInteger(numero) && numero <= MAIOR_CODIGO_UNICODE ? String.fromCodePoint(numero) : entidade;
 			}
 			const acentuada = codigo.match(/^([a-z])(acute|grave|circ|tilde|uml|cedil)$/i);
 			return acentuada
@@ -210,7 +212,7 @@ export function lerConsultaPorEscola(html: string, codigoInep: string): Situacao
 	return {
 		escola: {
 			codigoInep,
-			nome: identificacao.replace(new RegExp(`\\s*-\\s*${codigoInep}$`), ""),
+			nome: identificacao.replace(SUFIXO_DO_CODIGO_INEP, ""),
 			municipio: [dadosDaEscola.get("Município"), dadosDaEscola.get("UF")].filter(Boolean).join("/"),
 		},
 		exercicio,

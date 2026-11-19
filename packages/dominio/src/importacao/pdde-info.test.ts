@@ -170,6 +170,15 @@ describe("lerConsultaPorEscola", () => {
 		expect(lerConsultaPorEscola("<html></html>", "35079923")).toBeNull();
 	});
 
+	it("mantém como texto uma entidade HTML fora do Unicode em vez de quebrar a leitura", () => {
+		const pagina = paginaDaConsulta({ ocorrencia: "CONTA &#99999999; BLOQUEADA &#x41;" });
+		expect(lerConsultaPorEscola(pagina, "35079923")?.pendencias).toContainEqual({
+			entidade: "UEx",
+			assunto: "Conta bancária",
+			mensagem: "PDDE: CONTA &#99999999; BLOQUEADA A",
+		});
+	});
+
 	it("avisa quando o PDDE Info muda de formato em vez de gravar valor errado", () => {
 		const pagina = paginaDaConsulta({ repassesDoPdde: LINHAS_DE_REPASSE.replace("3.396,00", "n/d") });
 		expect(() => lerConsultaPorEscola(pagina, "35079923")).toThrow('"n/d" não é um valor em reais');

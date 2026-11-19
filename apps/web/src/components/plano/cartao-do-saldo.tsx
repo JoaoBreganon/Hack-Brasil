@@ -1,9 +1,6 @@
-import { type Categoria, FONTES, formatarReais, type Saldo } from "@aloca/dominio";
+import { CATEGORIAS, type Categoria, FONTES, formatarReais, type Saldo } from "@aloca/dominio";
 
-const CATEGORIAS: { chave: Categoria; rotulo: string }[] = [
-	{ chave: "custeio", rotulo: "Custeio" },
-	{ chave: "capital", rotulo: "Capital" },
-];
+const ROTULOS: Record<Categoria, string> = { custeio: "Custeio", capital: "Capital" };
 
 type Propriedades = {
 	saldoTotal: number;
@@ -34,7 +31,8 @@ export function CartaoDoSaldo({ saldoTotal, saldo, noPlano, fonte, enderecoDaFon
 				</p>
 			</div>
 
-			{CATEGORIAS.map(({ chave, rotulo }) => {
+			{CATEGORIAS.map((chave) => {
+				const rotulo = ROTULOS[chave];
 				const percentual = saldo[chave] > 0 ? Math.min(100, Math.round((noPlano[chave] / saldo[chave]) * 100)) : 0;
 				return (
 					<div key={chave} className="flex flex-col gap-2">

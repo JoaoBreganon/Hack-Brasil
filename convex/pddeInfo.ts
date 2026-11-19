@@ -5,16 +5,32 @@ import type { Id } from "./_generated/dataModel";
 import { internalAction } from "./_generated/server";
 
 const SUGESTAO_DE_PLANILHA = "Tente de novo mais tarde ou importe o saldo por planilha (saldos:importarCsv).";
+const TEMPO_LIMITE_EM_MS = 20_000;
+
+async function buscarNoPddeInfo(endereco: string): Promise<Response> {
+	const controle = new AbortController();
+	const espera = setTimeout(() => controle.abort(), TEMPO_LIMITE_EM_MS);
+	try {
+		return await fetch(endereco, {
+			headers: { "User-Agent": "Aloca/0.1 (+https://github.com/JoaoBreganon/Hack-Brasil)" },
+			signal: controle.signal,
+		});
+	} catch (erro) {
+		const motivo = controle.signal.aborted
+			? `sem resposta em ${TEMPO_LIMITE_EM_MS / 1000} s`
+			: erro instanceof Error
+				? erro.message
+				: String(erro);
+		throw new Error(`O PDDE Info não respondeu (${motivo}). ${SUGESTAO_DE_PLANILHA}`);
+	} finally {
+		clearTimeout(espera);
+	}
+}
 
 export const coletar = internalAction({
 	args: { codigoInep: v.string(), exercicio: v.number() },
 	handler: async (ctx, { codigoInep, exercicio }) => {
-		const endereco = enderecoDaConsultaPorEscola(codigoInep, exercicio);
-		const resposta = await fetch(endereco, {
-			headers: { "User-Agent": "Aloca/0.1 (+https://github.com/JoaoBreganon/Hack-Brasil)" },
-		}).catch((erro: unknown) => {
-			throw new Error(`O PDDE Info não respondeu (${erro instanceof Error ? erro.message : String(erro)}). ${SUGESTAO_DE_PLANILHA}`);
-		});
+		const resposta = await buscarNoPddeInfo(enderecoDaConsultaPorEscola(codigoInep, exercicio));
 		if (!resposta.ok) {
 			throw new Error(`O PDDE Info respondeu ${resposta.status}. ${SUGESTAO_DE_PLANILHA}`);
 		}

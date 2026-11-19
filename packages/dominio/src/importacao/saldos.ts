@@ -1,5 +1,5 @@
 import { ehCodigoInepValido, type FonteDoDado, type RegistroDeSaldo } from "../escola/escola";
-import type { Categoria } from "../regras/regras";
+import { CATEGORIAS, type Categoria } from "../regras/regras";
 import { type LinhaDoCsv, lerCsv } from "./csv";
 
 type Coluna = "codigoInep" | "exercicio" | Categoria;
@@ -103,7 +103,7 @@ export function importarSaldosCsv(texto: string, fonte: FonteDoDado, coletadoEm:
 			problemas.push(`exercício "${textoDoExercicio}" precisa ser um ano com 4 dígitos`);
 		}
 		const saldo = { custeio: 0, capital: 0 };
-		for (const categoria of ["custeio", "capital"] as const) {
+		for (const categoria of CATEGORIAS) {
 			const centavos = lerValorEmCentavos(valor(categoria));
 			if (centavos === null) {
 				problemas.push(`${categoria} "${valor(categoria)}" não é um valor em reais`);
