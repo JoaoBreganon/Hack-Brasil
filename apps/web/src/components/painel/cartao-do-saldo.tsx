@@ -1,4 +1,5 @@
-import { CATEGORIAS, type Categoria, FONTES, formatarReais, type Saldo } from "@aloca/dominio";
+import { CATEGORIAS, type Categoria, formatarReais, type Saldo } from "@aloca/dominio";
+import type { ReactNode } from "react";
 
 const ROTULOS: Record<Categoria, string> = { custeio: "Custeio", capital: "Capital" };
 
@@ -8,9 +9,10 @@ type Propriedades = {
 	noPlano: Saldo;
 	fonte: string;
 	enderecoDaFonte?: string;
+	rodape?: ReactNode;
 };
 
-export function CartaoDoSaldo({ saldoTotal, saldo, noPlano, fonte, enderecoDaFonte }: Propriedades) {
+export function CartaoDoSaldo({ saldoTotal, saldo, noPlano, fonte, enderecoDaFonte, rodape }: Propriedades) {
 	return (
 		<section aria-labelledby="titulo-saldo" className="flex min-w-0 flex-[1_1_340px] flex-col gap-6 rounded-[20px] bg-papel p-6 sm:p-8">
 			<div>
@@ -55,9 +57,11 @@ export function CartaoDoSaldo({ saldoTotal, saldo, noPlano, fonte, enderecoDaFon
 				);
 			})}
 
-			<p className="mt-auto border-t border-dashed border-border pt-4 text-xs text-muted-foreground">
-				Divisão padrão de 80% custeio e 20% capital. Regra: {FONTES.percentualPadrao.norma}.
-			</p>
+			{rodape && (
+				<div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-border pt-4">
+					{rodape}
+				</div>
+			)}
 		</section>
 	);
 }

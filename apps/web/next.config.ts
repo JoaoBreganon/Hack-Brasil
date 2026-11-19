@@ -4,8 +4,18 @@ import type { NextConfig } from "next";
 
 const RAIZ_DO_REPOSITORIO = path.resolve(process.cwd(), "../..");
 const EM_DESENVOLVIMENTO = process.env.NODE_ENV === "development";
+const INEP_DA_DEMONSTRACAO = "35079923";
 
 loadEnvConfig(RAIZ_DO_REPOSITORIO);
+
+function origensDoConvex(): string {
+	const endereco = process.env.NEXT_PUBLIC_CONVEX_URL;
+	if (!endereco) {
+		return "";
+	}
+	const { origin, protocol, host } = new URL(endereco);
+	return ` ${origin} ${protocol === "https:" ? "wss" : "ws"}://${host}`;
+}
 
 const POLITICA_DE_CONTEUDO = [
 	"default-src 'self'",
@@ -13,7 +23,7 @@ const POLITICA_DE_CONTEUDO = [
 	"style-src 'self' 'unsafe-inline'",
 	"img-src 'self' data: blob:",
 	"font-src 'self'",
-	`connect-src 'self' https://*.convex.cloud wss://*.convex.cloud${EM_DESENVOLVIMENTO ? " ws:" : ""}`,
+	`connect-src 'self' https://*.convex.cloud wss://*.convex.cloud${origensDoConvex()}${EM_DESENVOLVIMENTO ? " ws:" : ""}`,
 	"object-src 'none'",
 	"base-uri 'self'",
 	"form-action 'self'",
@@ -43,6 +53,9 @@ const nextConfig: NextConfig = {
 				as: "*.css",
 			},
 		},
+	},
+	async redirects() {
+		return [{ source: "/plano", destination: `/escola/${INEP_DA_DEMONSTRACAO}/plano`, permanent: false }];
 	},
 	async headers() {
 		return [{ source: "/:path*", headers: CABECALHOS_DE_SEGURANCA }];

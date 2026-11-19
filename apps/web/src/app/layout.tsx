@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { DadosEstruturados } from "@/components/seo/dados-estruturados";
+import { Toaster } from "@/components/ui/sonner";
 import { SITE } from "@/config/site";
 import "./globals.css";
 
@@ -61,9 +62,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
 	return (
 		<html lang={SITE.idioma} className={`${geist.variable} ${bricolage.variable} h-full antialiased`}>
-			<body className="flex min-h-full flex-col">
+			<body className="flex min-h-full flex-col print:bg-white">
 				<DadosEstruturados />
 				<ConvexClientProvider>{children}</ConvexClientProvider>
+				<Toaster position="top-center" richColors closeButton />
 			</body>
 		</html>
 	);

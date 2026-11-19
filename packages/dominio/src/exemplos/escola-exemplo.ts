@@ -5,12 +5,7 @@ export const ESCOLA_EXEMPLO = {
 	nome: "EMEF Professora Teruyo Kikuta",
 	codigoInep: "35079923",
 	municipio: "Adamantina/SP",
-	exercicio: 2027,
-	saldoTotalEmCentavos: 1_979_915,
 	saldo: dividirPeloPercentualPadrao(1_979_915),
-	fonteDoSaldo:
-		"Saldo real das contas do PDDE em outubro de 2026, PDDE Info (FNDE), coletado em 18 de novembro de 2026. O prazo é simulado para o exercício de 2027.",
-	enderecoDaFonte: "https://www.fnde.gov.br/pddeinfo/pddeinfo/escola/consultar?ano=2026&co_escola=35079923&consultar=Consultar",
 };
 
 export const NECESSIDADES_EXEMPLO: Necessidade[] = [

@@ -1,4 +1,4 @@
-import { FONTES, formatarReais, type PlanoDeCompra, REGRAS_POR_TIPO } from "@aloca/dominio";
+import { FONTES, formatarReais, ORCAMENTOS_EXIGIDOS, type PlanoDeCompra, REGRAS_POR_TIPO } from "@aloca/dominio";
 import { RegraCitada } from "./regra-citada";
 import { SeloDeCategoria } from "./selo-de-categoria";
 
@@ -12,11 +12,11 @@ export function TabelaDoPlano({ plano }: { plano: PlanoDeCompra }) {
 	return (
 		<section id="plano" aria-labelledby="titulo-plano" className="flex flex-col gap-5">
 			<div>
-				<h2 id="titulo-plano" className="font-heading text-[32px] leading-none sm:text-[40px] font-extrabold tracking-tight">
-					Plano de compra
+				<h2 id="titulo-plano" className="font-heading text-[26px] font-extrabold tracking-tight">
+					Dentro das regras
 				</h2>
 				<p className="mt-2.5 text-base text-muted-foreground">
-					{plano.itens.length} itens dentro das regras, somando{" "}
+					{plano.itens.length} {plano.itens.length === 1 ? "item" : "itens"} dentro das regras, somando{" "}
 					<strong className="text-tinta tabular-nums">{formatarReais(totalDoPlano)}</strong>. Sobram{" "}
 					<strong className="bg-cantalupo px-1 text-tinta tabular-nums">{formatarReais(sobra)}</strong> para planejar.
 				</p>
@@ -65,11 +65,11 @@ export function TabelaDoPlano({ plano }: { plano: PlanoDeCompra }) {
 								<td className={`${CELULA} text-right font-medium tabular-nums`}>{necessidade.quantidade}</td>
 								<td className={CELULA}>
 									<ul className="grid grid-cols-3 gap-2">
-										{validacao.escolha?.cotacoesOrdenadas.map((cotacao, posicao) => {
+										{validacao.escolha?.cotacoesOrdenadas.slice(0, ORCAMENTOS_EXIGIDOS).map((cotacao, posicao) => {
 											const menor = posicao === 0;
 											return (
 												<li
-													key={cotacao.fornecedor}
+													key={`${posicao}-${cotacao.fornecedor}`}
 													className={`flex flex-col rounded-full border-2 px-3 py-2 leading-tight ${menor ? "-rotate-[1.5deg] border-primary" : "border-transparent"}`}
 												>
 													<span

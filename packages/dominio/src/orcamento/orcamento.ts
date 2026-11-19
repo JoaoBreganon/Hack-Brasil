@@ -1,4 +1,7 @@
 export const ORCAMENTOS_EXIGIDOS = 3;
+export const ORIGENS_DO_ORCAMENTO = ["manual", "busca", "exemplo"] as const;
+
+export type OrigemDoOrcamento = (typeof ORIGENS_DO_ORCAMENTO)[number];
 
 export type Cotacao = {
 	fornecedor: string;

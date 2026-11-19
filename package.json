@@ -20,8 +20,12 @@
 		"convex": "^1.50.0"
 	},
 	"devDependencies": {
+		"@edge-runtime/vm": "^5.0.0",
+		"@types/node": "^20.19.43",
+		"convex-test": "^0.0.72",
 		"prettier": "^3.10.1",
 		"typescript": "^5.9.3",
+		"vite": "^8.3.8",
 		"vitest": "^5.1.0"
 	}
 }

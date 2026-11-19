@@ -69,16 +69,16 @@ flowchart TD
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | Next.js, Tailwind CSS, shadcn/ui, Recharts |
+| Frontend | Next.js, Tailwind CSS, shadcn/ui |
 | Backend e banco | Convex (dados em tempo real e rotinas agendadas) |
 | Coleta de dados | Consulta pública do PDDE Info (ação Convex) e Firecrawl (lojas) |
 | IA | LLM com saída estruturada e validação por regras |
-| Documentos | React-PDF |
+| Documentos | Ata e mapa de preços em página de impressão, salvos em PDF pelo navegador |
 | Login | WorkOS |
 | E-mail | Resend + React Email |
 | WhatsApp e SMS | Nvoip (template aprovado pela Meta, SMS como reserva) |
 | Hospedagem | Vercel |
-| Testes | Vitest e Playwright |
+| Testes | Vitest e convex-test |
 
 ## 📊 Fontes de dados
 
@@ -108,18 +108,28 @@ pnpm dev
 
 **Variáveis de ambiente**
 
+O `.env.local` da raiz guarda as variáveis do site. O `pnpm convex:dev` preenche as do Convex na primeira vez.
+
 ```env
 NEXT_PUBLIC_SITE_URL=
 CONVEX_DEPLOYMENT=
 NEXT_PUBLIC_CONVEX_URL=
 CONVEX_SITE_URL=
-FIRECRAWL_API_KEY=
-NVOIP_API_KEY=
-LLM_API_KEY=
-RESEND_API_KEY=
-WORKOS_API_KEY=
-WORKOS_CLIENT_ID=
 ```
+
+As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Sem elas, a busca de preços e o envio de alertas avisam que não estão configurados e o resto funciona.
+
+```bash
+npx convex env set FIRECRAWL_API_KEY fc-...
+npx convex env set NVOIP_NUMBERSIP ...
+npx convex env set NVOIP_USER_TOKEN ...
+npx convex env set NVOIP_CLIENT_ID ...
+npx convex env set NVOIP_CLIENT_SECRET ...
+npx convex env set NVOIP_WHATSAPP_INSTANCE ...
+npx convex env set NVOIP_WHATSAPP_TEMPLATE ...
+```
+
+Sem a instância e o template do WhatsApp, o alerta vai só por SMS.
 
 **Comandos**
 
@@ -128,7 +138,7 @@ WORKOS_CLIENT_ID=
 | `pnpm dev` | sobe o app em http://localhost:3000 |
 | `pnpm convex:dev` | sobe o backend Convex |
 | `pnpm convex:limpar` | tira os comentários que o Convex escreve em `convex/_generated` (rodar antes de cada commit que mexer no Convex) |
-| `pnpm test` | roda os testes do domínio |
+| `pnpm test` | roda os testes do domínio e das funções do Convex |
 | `pnpm typecheck` | confere os tipos de todos os pacotes |
 | `pnpm lint` | roda o ESLint |
 | `pnpm format` | formata o código com tab (Prettier) |
@@ -136,13 +146,19 @@ WORKOS_CLIENT_ID=
 ## 🗂️ Estrutura
 
 ```
-apps/web/              Next.js: área do diretor, painel da secretaria, consulta aberta
-  src/app/             páginas (início e /plano), SEO (robots, sitemap, imagens de compartilhamento)
-  src/components/      componentes de interface (plano/, seo/, ui/)
-  src/dados/           monta os dados de cada tela a partir do domínio
-  src/config/          dados do site
+apps/web/              Next.js: área do diretor
+  src/app/             páginas e SEO (robots, sitemap, imagens de compartilhamento)
+    entrar/            entrada pelo código INEP
+    escola/[inep]/     saldo e prazo, necessidades, orcamentos, plano, ata e alertas
+  src/components/      uma pasta por tela (painel/, necessidades/, orcamentos/, plano/, ata/, alertas/, entrar/), escola/ com o que as telas dividem, seo/ e ui/ (shadcn)
+  src/hooks/           painel da escola vindo do Convex e operações com aviso de erro
+  src/config/          dados do site e etapas do fluxo
   src/fontes/          Bricolage Grotesque e Geist, servidas localmente
 convex/                banco, funções e rotinas agendadas
+  lib/                 Firecrawl, Nvoip, requisição com tempo limite e regras do plano
+  pddeInfo.ts          coleta do saldo no PDDE Info
+  painel.ts            tudo o que as telas da escola mostram, numa consulta só
+  itens.ts, orcamentos.ts, planos.ts, precos.ts, contatos.ts, alertas.ts, crons.ts
 packages/dominio/      regras do PDDE, sem dependências externas e com testes
   src/calendario/      dias úteis, feriados nacionais e Carnaval
   src/prazo/           10º dia útil de fevereiro e estorno
@@ -153,6 +169,8 @@ packages/dominio/      regras do PDDE, sem dependências externas e com testes
   src/formato/         moeda e data em pt-BR
   src/importacao/      leitura do PDDE Info e importação de saldos por CSV
   src/alerta/          template do WhatsApp e SMS de reserva do alerta de prazo
+  src/ata/             texto da ata da APM e mapa de preços
+  src/contato/         celular com DDD e máscara
   src/exemplos/        escola exemplo da demo
 ```
 

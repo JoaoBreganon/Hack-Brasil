@@ -46,3 +46,9 @@ export function situacaoDoPrazo(exercicio: number, hoje: Date, opcoes: OpcoesDoC
 		diasCorridosRestantes: encerrado ? 0 : diasCorridosAte(hoje, prazo.limiteParaUso),
 	};
 }
+
+export function exercicioEmCurso(hoje: Date, opcoes: OpcoesDoCalendario = {}): number {
+	const anterior = hoje.getUTCFullYear() - 1;
+	const prazoAnterior = prazoDoExercicio(anterior, opcoes);
+	return prazoAnterior && hoje.getTime() <= prazoAnterior.limiteParaUso.getTime() ? anterior : anterior + 1;
+}

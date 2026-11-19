@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { criarData, paraTextoIso } from "../calendario/calendario";
-import { prazoDoExercicio, situacaoDoPrazo } from "./prazo";
+import { exercicioEmCurso, prazoDoExercicio, situacaoDoPrazo } from "./prazo";
 
 describe("prazoDoExercicio", () => {
 	it("não existe prazo de estorno antes do exercício de 2027", () => {
@@ -25,5 +25,16 @@ describe("situacaoDoPrazo", () => {
 	it("o próprio dia limite ainda está dentro do prazo", () => {
 		expect(situacaoDoPrazo(2027, criarData(2028, 2, 14)).tipo).toBe("correndo");
 		expect(situacaoDoPrazo(2027, criarData(2028, 2, 15)).tipo).toBe("encerrado");
+	});
+});
+
+describe("exercicioEmCurso", () => {
+	it("fica no exercício anterior até o fim do prazo de fevereiro", () => {
+		expect(exercicioEmCurso(criarData(2028, 1, 20))).toBe(2027);
+		expect(exercicioEmCurso(criarData(2028, 3, 1))).toBe(2028);
+	});
+
+	it("antes da regra nova usa o ano corrente", () => {
+		expect(exercicioEmCurso(criarData(2026, 11, 18))).toBe(2026);
 	});
 });

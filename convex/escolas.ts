@@ -1,7 +1,6 @@
 import { ehCodigoInepValido, type Escola } from "@aloca/dominio";
-import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, type MutationCtx, query, type QueryCtx } from "./_generated/server";
+import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { camposDaEscola } from "./schema";
 
 export function buscarEscola(ctx: QueryCtx, codigoInep: string) {
@@ -24,11 +23,6 @@ export async function salvarEscola(ctx: MutationCtx, escola: Escola): Promise<Id
 	}
 	return existente._id;
 }
-
-export const porCodigoInep = query({
-	args: { codigoInep: v.string() },
-	handler: (ctx, { codigoInep }) => buscarEscola(ctx, codigoInep),
-});
 
 export const cadastrar = internalMutation({
 	args: camposDaEscola,

@@ -1,9 +1,9 @@
 import { importarSaldosCsv } from "@aloca/dominio";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, type MutationCtx, query, type QueryCtx } from "./_generated/server";
+import { internalMutation, internalQuery, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { buscarEscola, salvarEscola } from "./escolas";
-import { camposDaEscola, fonteDoDado, saldoPorCategoria } from "./schema";
+import { camposDaEscola, fonteDoDado, pendenciaDoPdde, saldoPorCategoria } from "./schema";
 
 type NovoSaldo = Omit<Doc<"saldo">, "_id" | "_creationTime">;
 
@@ -15,25 +15,33 @@ function buscarSaldoMaisRecente(ctx: QueryCtx, escolaId: Id<"escola">, exercicio
 		.first();
 }
 
+export function buscarSaldoAtual(ctx: QueryCtx, escolaId: Id<"escola">) {
+	return ctx.db
+		.query("saldo")
+		.withIndex("por_escola_exercicio_coleta", (q) => q.eq("escolaId", escolaId))
+		.order("desc")
+		.first();
+}
+
 async function registrarSaldo(ctx: MutationCtx, novo: NovoSaldo): Promise<Id<"saldo">> {
 	const atual = await buscarSaldoMaisRecente(ctx, novo.escolaId, novo.exercicio);
 	const mesmoSaldo = atual?.saldo.custeio === novo.saldo.custeio && atual.saldo.capital === novo.saldo.capital;
 	if (!atual || !mesmoSaldo) {
 		return ctx.db.insert("saldo", novo);
 	}
-	await ctx.db.patch(atual._id, { fonte: novo.fonte, coletadoEm: novo.coletadoEm });
+	await ctx.db.patch(atual._id, { fonte: novo.fonte, coletadoEm: novo.coletadoEm, pendencias: novo.pendencias });
 	return atual._id;
 }
 
-export const maisRecente = query({
-	args: { codigoInep: v.string(), exercicio: v.number() },
-	handler: async (ctx, { codigoInep, exercicio }) => {
+export const coletadoDesde = internalQuery({
+	args: { codigoInep: v.string(), desde: v.number() },
+	handler: async (ctx, { codigoInep, desde }) => {
 		const escola = await buscarEscola(ctx, codigoInep);
 		if (!escola) {
-			return null;
+			return false;
 		}
-		const saldo = await buscarSaldoMaisRecente(ctx, escola._id, exercicio);
-		return saldo && { escola, saldo };
+		const ultimo = await buscarSaldoAtual(ctx, escola._id);
+		return ultimo !== null && ultimo.coletadoEm >= desde;
 	},
 });
 
@@ -44,6 +52,7 @@ export const registrarColeta = internalMutation({
 		saldo: saldoPorCategoria,
 		fonte: fonteDoDado,
 		coletadoEm: v.number(),
+		pendencias: v.optional(v.array(pendenciaDoPdde)),
 	},
 	handler: async (ctx, { escola, ...registro }) => {
 		const escolaId = await salvarEscola(ctx, escola);
