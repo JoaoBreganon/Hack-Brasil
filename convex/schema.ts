@@ -58,7 +58,10 @@ export default defineSchema({
 		saldoId: v.id("saldo"),
 		status: umDos(STATUS_DO_PLANO),
 		aprovadoEm: v.optional(v.number()),
-	}).index("por_escola_exercicio", ["escolaId", "exercicio"]),
+		sugestaoComIaEm: v.optional(v.number()),
+	})
+		.index("por_escola_exercicio", ["escolaId", "exercicio"])
+		.index("por_sugestao_com_ia", ["sugestaoComIaEm"]),
 
 	item: defineTable({
 		planoId: v.id("plano"),

@@ -49,7 +49,7 @@ Quem contrata é a **secretaria de educação**, com assinatura por escola. É e
 1. Rotinas agendadas coletam os dados do PDDE Info por rede, ou sob demanda na consulta aberta.
 2. Os dados entram no banco com fonte e horário da coleta.
 3. O motor de regras calcula o risco de estorno, os dias úteis até o prazo e as pendências.
-4. A IA gera o plano de compra e um validador confere cada item contra as regras do PDDE.
+4. A IA sugere os itens do plano de compra (sem chave de IA, regras fixas fazem isso) e um validador barra o que o PDDE não paga antes de salvar.
 5. O sistema busca preços e gera os documentos em PDF.
 6. Alertas são enviados e a área do diretor, o painel e a página pública atualizam em tempo real.
 
@@ -127,9 +127,14 @@ npx convex env set NVOIP_CLIENT_ID ...
 npx convex env set NVOIP_CLIENT_SECRET ...
 npx convex env set NVOIP_WHATSAPP_INSTANCE ...
 npx convex env set NVOIP_WHATSAPP_TEMPLATE ...
+npx convex env set LLM_API_KEY sk-...
+npx convex env set LLM_MODEL gpt-4o-mini
+npx convex env set LLM_BASE_URL https://api.openai.com/v1
 ```
 
 Sem a instância e o template do WhatsApp, o alerta vai só por SMS.
+
+A `LLM_API_KEY` liga a sugestão de itens por IA em Compras. O Convex manda ao modelo o saldo livre de custeio e de capital, os tipos de despesa que o PDDE paga e não paga e o que o diretor escreveu, e pede a resposta em JSON com esquema fixo (saída estruturada). A chamada segue a API de chat da OpenAI, então `LLM_MODEL` e `LLM_BASE_URL` (opcionais, com padrão `gpt-4o-mini` e `https://api.openai.com/v1`) permitem usar outro provedor compatível. Sem a chave, ou quando a IA falha ou passa de 30 pedidos na hora, as sugestões saem das regras fixas do PDDE. Nos dois casos o validador do `@aloca/dominio` barra conta de consumo, pessoal, servidor público, aluguel, tarifa bancária, tributo e o resto do que o PDDE não paga antes de salvar ou mostrar qualquer item.
 
 **Comandos**
 
@@ -156,9 +161,10 @@ apps/web/              Next.js: área do diretor
   src/config/          dados do site e áreas do menu
   src/fontes/          Bricolage Grotesque e Geist, servidas localmente
 convex/                banco, funções e rotinas agendadas
-  lib/                 Firecrawl, Nvoip, requisição com tempo limite e regras do plano
+  lib/                 Firecrawl, Nvoip, IA (LLM), requisição com tempo limite e regras do plano
   pddeInfo.ts          coleta do saldo no PDDE Info
   painel.ts            tudo o que as telas da escola mostram, numa consulta só
+  sugestoes.ts         sugestão de itens pela IA ou pelas regras fixas, sempre pelo validador
   itens.ts, orcamentos.ts, planos.ts, precos.ts, contatos.ts, alertas.ts, crons.ts
 packages/dominio/      regras do PDDE, sem dependências externas e com testes
   src/calendario/      dias úteis, feriados nacionais, Carnaval e os meses do calendário do prazo
@@ -167,6 +173,7 @@ packages/dominio/      regras do PDDE, sem dependências externas e com testes
   src/regras/          o que pode e o que não pode ser comprado, com a norma citada
   src/orcamento/       três orçamentos e menor preço
   src/plano/           plano de compra dentro do saldo de cada categoria
+  src/sugestao/        sugestão de itens: esquema da IA, regras fixas sem chave e validador que barra despesa vedada
   src/formato/         moeda e data em pt-BR
   src/importacao/      leitura do PDDE Info e importação de saldos por CSV
   src/alerta/          template do WhatsApp e SMS de reserva do alerta de prazo

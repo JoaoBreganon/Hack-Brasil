@@ -1,5 +1,6 @@
 "use client";
 
+import type { ResultadoDaSugestao, Saldo } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
 import { PlusIcon } from "lucide-react";
@@ -9,25 +10,42 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "
 import { Spinner } from "@/components/ui/spinner";
 import { enderecoDaArea, ITEM_NOVO } from "@/config/navegacao";
 import { useOperacao } from "@/hooks/use-operacao";
+import { FormularioDeSugestao } from "./sugestao-de-itens";
 
-export function ListaVazia({ codigoInep }: { codigoInep: string }) {
+type Propriedades = {
+	codigoInep: string;
+	saldoLivre: Saldo;
+	aoSugerir: (resultado: ResultadoDaSugestao) => void;
+};
+
+export function ListaVazia({ codigoInep, saldoLivre, aoSugerir }: Propriedades) {
 	const preencher = useOperacao(useMutation(api.itens.preencherComExemplo));
 
 	return (
 		<Empty className="rounded-lg border border-border bg-card py-14">
 			<EmptyHeader>
 				<EmptyTitle className="text-lg font-semibold">Nenhum item ainda</EmptyTitle>
-				<EmptyDescription>Comece pelo que a escola mais precisa. Para conhecer o Aloca, use a lista de exemplo.</EmptyDescription>
+				<EmptyDescription>
+					Conte o que a escola precisa e o Aloca sugere os itens dentro do saldo e das regras do PDDE. Para conhecer o Aloca, use
+					a lista de exemplo.
+				</EmptyDescription>
 			</EmptyHeader>
-			<EmptyContent className="flex-row flex-wrap justify-center">
-				<Link href={enderecoDaArea(codigoInep, "compras", { item: ITEM_NOVO })} scroll={false} className={buttonVariants()}>
-					<PlusIcon data-icon="inline-start" />
-					Novo item
-				</Link>
-				<Button variant="secondary" onClick={() => preencher.executar({ codigoInep })} disabled={preencher.executando}>
-					{preencher.executando && <Spinner data-icon="inline-start" />}
-					Usar a lista de exemplo
-				</Button>
+			<EmptyContent className="max-w-md">
+				<FormularioDeSugestao codigoInep={codigoInep} saldoLivre={saldoLivre} aoSugerir={aoSugerir} className="w-full" />
+				<div className="flex w-full flex-wrap justify-center gap-2 border-t border-regra pt-4">
+					<Link
+						href={enderecoDaArea(codigoInep, "compras", { item: ITEM_NOVO })}
+						scroll={false}
+						className={buttonVariants({ variant: "secondary" })}
+					>
+						<PlusIcon data-icon="inline-start" />
+						Novo item
+					</Link>
+					<Button variant="ghost" onClick={() => preencher.executar({ codigoInep })} disabled={preencher.executando}>
+						{preencher.executando && <Spinner data-icon="inline-start" />}
+						Usar a lista de exemplo
+					</Button>
+				</div>
 			</EmptyContent>
 		</Empty>
 	);

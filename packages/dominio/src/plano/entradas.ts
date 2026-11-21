@@ -9,9 +9,12 @@ export const LIMITES = {
 	valorEmCentavos: { minimo: 1, maximo: 100_000_000 },
 	endereco: { maximo: 500 },
 	justificativa: { minimo: 10, maximo: 500 },
+	pedido: { maximo: 600 },
 	orcamentosPorItem: 6,
 	itensPorPlano: 60,
+	sugestoesPorPedido: 10,
 	buscasDePrecoPorHora: 60,
+	sugestoesComIaPorHora: 30,
 } as const;
 
 export type Validacao<T> = { ok: true; valor: T } | { ok: false; erros: Partial<Record<keyof T, string>> };
@@ -105,5 +108,13 @@ export function validarJustificativa(texto: string): Validacao<{ justificativa: 
 	return resultado(
 		{ justificativa },
 		tamanhoValido ? {} : { justificativa: `Explique em ${LIMITES.justificativa.minimo} a ${LIMITES.justificativa.maximo} caracteres.` },
+	);
+}
+
+export function validarPedido(texto: string): Validacao<{ pedido: string }> {
+	const pedido = umaLinha(texto);
+	return resultado(
+		{ pedido },
+		pedido.length > LIMITES.pedido.maximo ? { pedido: `Conte o que a escola precisa em até ${LIMITES.pedido.maximo} caracteres.` } : {},
 	);
 }

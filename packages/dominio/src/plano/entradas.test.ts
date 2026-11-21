@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ehEnderecoWeb, validarCotacao, validarJustificativa, validarNecessidade } from "./entradas";
+import { ehEnderecoWeb, LIMITES, validarCotacao, validarJustificativa, validarNecessidade, validarPedido } from "./entradas";
 
 describe("validarNecessidade", () => {
 	it("aceita um item válido e limpa os espaços da descrição", () => {
@@ -51,6 +51,17 @@ describe("validarJustificativa", () => {
 			ok: true,
 			valor: { justificativa: "Só existe uma vidraçaria na cidade." },
 		});
+	});
+});
+
+describe("validarPedido", () => {
+	it("aceita pedido vazio e junta as linhas do texto", () => {
+		expect(validarPedido("")).toEqual({ ok: true, valor: { pedido: "" } });
+		expect(validarPedido("  livros\n\nventiladores  ")).toEqual({ ok: true, valor: { pedido: "livros ventiladores" } });
+	});
+
+	it("recusa pedido longo demais", () => {
+		expect(validarPedido("a".repeat(LIMITES.pedido.maximo + 1)).ok).toBe(false);
 	});
 });
 

@@ -1,5 +1,6 @@
+import { REGRAS_POR_TIPO } from "@aloca/dominio";
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
@@ -19,6 +20,43 @@ async function escolaComSaldo() {
 	const t = convexTest(schema, MODULOS);
 	await t.mutation(internal.saldos.registrarColeta, COLETA);
 	return t;
+}
+
+type Teste = Awaited<ReturnType<typeof escolaComSaldo>>;
+
+const RESPOSTA_DA_IA = {
+	itens: [
+		{ descricao: "Conta de luz de dezembro", tipo: "conta de consumo", quantidade: 1, prioridade: 1 },
+		{ descricao: "Cadeiras para o refeitório", tipo: "material permanente", quantidade: 20, prioridade: 2 },
+		{ descricao: "Salário do vigia", tipo: "pessoal", quantidade: 1, prioridade: 3 },
+		{ descricao: "Livros de literatura", tipo: "livro", quantidade: 30, prioridade: 4 },
+		{ descricao: "Tarifa do banco", tipo: "tarifa bancária", quantidade: 12, prioridade: 5 },
+	],
+};
+
+function respostaJson(corpo: unknown, status = 200) {
+	return new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+}
+
+function iaRespondendo(conteudo: unknown) {
+	const chamada = vi.fn(async (_endereco: string | URL | Request, _opcoes?: RequestInit) =>
+		respostaJson({ choices: [{ message: { content: JSON.stringify(conteudo) } }] }),
+	);
+	vi.stubEnv("LLM_API_KEY", "chave-de-teste");
+	vi.stubGlobal("fetch", chamada);
+	return chamada;
+}
+
+function semChaveDaIa() {
+	const chamada = vi.fn();
+	vi.stubEnv("LLM_API_KEY", "");
+	vi.stubGlobal("fetch", chamada);
+	return chamada;
+}
+
+async function descricoesSalvas(t: Teste) {
+	const itens = await t.run((ctx) => ctx.db.query("item").collect());
+	return itens.map(({ descricao }) => descricao);
 }
 
 describe("coleta do saldo", () => {
@@ -188,5 +226,101 @@ describe("limites de uso", () => {
 			prioridade: 1,
 		});
 		await expect(t.action(api.precos.buscar, { itemId })).rejects.toThrow("não está configurada");
+	});
+});
+
+describe("sugestão de itens", () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+		vi.unstubAllGlobals();
+	});
+
+	it("usa as regras fixas quando a LLM_API_KEY não está configurada", async () => {
+		const chamada = semChaveDaIa();
+		const t = await escolaComSaldo();
+		const resultado = await t.action(api.sugestoes.gerar, { codigoInep: INEP, pedido: "Faltam livros na biblioteca" });
+		expect(chamada).not.toHaveBeenCalled();
+		expect(resultado).toMatchObject({ origem: "regras", bloqueadas: [], descartadas: 0 });
+		expect(resultado.adicionados).toBeGreaterThan(0);
+		const painel = await t.query(api.painel.daEscola, { codigoInep: INEP });
+		expect(painel?.itens).toHaveLength(resultado.adicionados);
+		expect(painel?.itens[0]).toMatchObject({ descricao: "Livro de literatura infantojuvenil", prioridade: 1, orcamentos: [] });
+		expect(painel?.itens.every(({ tipo }) => REGRAS_POR_TIPO[tipo].permitido)).toBe(true);
+	});
+
+	it("não repete as sugestões das regras fixas num segundo pedido", async () => {
+		semChaveDaIa();
+		const t = await escolaComSaldo();
+		const primeiro = await t.action(api.sugestoes.gerar, { codigoInep: INEP });
+		const segundo = await t.action(api.sugestoes.gerar, { codigoInep: INEP });
+		const descricoes = await descricoesSalvas(t);
+		expect(descricoes).toHaveLength(primeiro.adicionados + segundo.adicionados);
+		expect(new Set(descricoes).size).toBe(descricoes.length);
+	});
+
+	it("barra as despesas vedadas que a IA devolve antes de salvar", async () => {
+		const chamada = iaRespondendo(RESPOSTA_DA_IA);
+		const t = await escolaComSaldo();
+		const resultado = await t.action(api.sugestoes.gerar, { codigoInep: INEP, pedido: "Pagar a luz, o vigia e comprar cadeiras" });
+		expect(resultado).toMatchObject({ origem: "ia", adicionados: 2, descartadas: 0 });
+		expect(resultado.bloqueadas.map(({ tipo, motivo }) => [tipo, motivo])).toEqual([
+			["conta de consumo", "O PDDE não paga conta de consumo"],
+			["pessoal", "O PDDE não paga pessoal"],
+			["tarifa bancária", "O PDDE não paga tarifa bancária"],
+		]);
+		expect(await descricoesSalvas(t)).toEqual(["Cadeiras para o refeitório", "Livros de literatura"]);
+		const [endereco, opcoes] = chamada.mock.calls[0];
+		expect(endereco).toBe("https://api.openai.com/v1/chat/completions");
+		const corpo = JSON.parse(String(opcoes?.body));
+		expect(corpo.response_format).toMatchObject({ type: "json_schema", json_schema: { strict: true } });
+		expect(corpo.messages[1].content).toContain("Pagar a luz, o vigia e comprar cadeiras");
+	});
+
+	it("cai nas regras fixas quando a IA falha", async () => {
+		vi.stubEnv("LLM_API_KEY", "chave-de-teste");
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => respostaJson({ error: "fora do ar" }, 503)),
+		);
+		const t = await escolaComSaldo();
+		const resultado = await t.action(api.sugestoes.gerar, { codigoInep: INEP });
+		expect(resultado.origem).toBe("regras");
+		expect(resultado.aviso).toContain("a IA respondeu 503");
+		expect(resultado.adicionados).toBeGreaterThan(0);
+	});
+
+	it("espera um minuto entre dois pedidos à IA da mesma escola", async () => {
+		iaRespondendo({ itens: [] });
+		const t = await escolaComSaldo();
+		await t.action(api.sugestoes.gerar, { codigoInep: INEP });
+		await expect(t.action(api.sugestoes.gerar, { codigoInep: INEP })).rejects.toThrow("Espere um minuto");
+	});
+
+	it("barra item vedado na gravação mesmo sem passar pela geração", async () => {
+		const t = await escolaComSaldo();
+		const resultado = await t.mutation(internal.sugestoes.registrar, {
+			codigoInep: INEP,
+			sugestoes: [
+				{ descricao: "Aluguel do salão de festas", tipo: "aluguel", quantidade: 1, prioridade: 1 },
+				{ descricao: "IPTU do prédio", tipo: "tributo", quantidade: 1, prioridade: 2 },
+				{ descricao: "Ventiladores", tipo: "material permanente", quantidade: 4, prioridade: 3 },
+				{ descricao: "ventiladores", tipo: "material permanente", quantidade: 4, prioridade: 4 },
+				{ descricao: "Carro da escola", tipo: "veículo", quantidade: 1, prioridade: 5 },
+			],
+		});
+		expect(resultado).toMatchObject({ adicionados: 1, descartadas: 2 });
+		expect(resultado.bloqueadas.map(({ tipo }) => tipo)).toEqual(["aluguel", "tributo"]);
+		expect(await descricoesSalvas(t)).toEqual(["Ventiladores"]);
+	});
+
+	it("recusa pedido longo e plano aprovado", async () => {
+		semChaveDaIa();
+		const t = await escolaComSaldo();
+		await expect(t.action(api.sugestoes.gerar, { codigoInep: INEP, pedido: "a".repeat(601) })).rejects.toThrow(
+			"Conte o que a escola precisa",
+		);
+		await t.mutation(api.itens.preencherComExemplo, { codigoInep: INEP });
+		await t.mutation(api.planos.aprovar, { codigoInep: INEP });
+		await expect(t.action(api.sugestoes.gerar, { codigoInep: INEP })).rejects.toThrow("Reabra o plano");
 	});
 });

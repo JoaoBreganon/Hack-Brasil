@@ -1,19 +1,21 @@
 "use client";
 
-import { ORCAMENTOS_EXIGIDOS, REGRAS_POR_TIPO } from "@aloca/dominio";
-import { PlusIcon } from "lucide-react";
+import { ORCAMENTOS_EXIGIDOS, REGRAS_POR_TIPO, type ResultadoDaSugestao } from "@aloca/dominio";
+import { PlusIcon, SparklesIcon } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { cn } from "cn";
 import { CabecalhoDaPagina } from "@/components/escola/cabecalho-da-pagina";
 import { PainelCarregado } from "@/components/escola/painel-carregado";
 import { buttonVariants } from "@/components/ui/button";
-import { enderecoDaArea, ITEM_NOVO } from "@/config/navegacao";
+import { enderecoDaArea, ITEM_NOVO, SUGERIR_ITENS } from "@/config/navegacao";
 import type { ItemDoPainel } from "@/hooks/use-painel-da-escola";
 import { FormularioDeItem } from "./formulario-de-item";
 import { ListaVazia } from "./lista-vazia";
 import { PainelDoItem } from "./painel-do-item";
+import { ResumoDaSugestao } from "./resumo-da-sugestao";
+import { PainelDeSugestao } from "./sugestao-de-itens";
 import { TabelaDeItens } from "./tabela-de-itens";
 
 type Filtro = "todos" | "faltam" | "fora";
@@ -23,8 +25,10 @@ function faltamOrcamentos({ tipo, orcamentos, justificativa }: ItemDoPainel): bo
 }
 
 export function TelaDeCompras() {
+	const roteador = useRouter();
 	const selecionado = useSearchParams().get("item");
 	const [filtro, setFiltro] = useState<Filtro>("todos");
+	const [sugestao, setSugestao] = useState<ResultadoDaSugestao | null>(null);
 
 	return (
 		<PainelCarregado>
@@ -41,7 +45,13 @@ export function TelaDeCompras() {
 				const visiveis = filtros.find(({ chave }) => chave === filtro)?.itens ?? ordenados;
 				const itemAberto = dados.itens.find(({ _id }) => _id === selecionado);
 				const novo = selecionado === ITEM_NOVO;
+				const sugerindo = selecionado === SUGERIR_ITENS && !derivados.aprovado;
 				const proximaPrioridade = dados.itens.reduce((maior, { prioridade }) => Math.max(maior, prioridade), 0) + 1;
+				const saldoLivre = derivados.plano.saldoRestante;
+				const aoSugerir = (resultado: ResultadoDaSugestao) => {
+					setSugestao(resultado);
+					roteador.replace(enderecoDaArea(codigoInep, "compras"), { scroll: false });
+				};
 				return (
 					<>
 						<CabecalhoDaPagina
@@ -49,14 +59,26 @@ export function TelaDeCompras() {
 							frase="O que a escola precisa e os orçamentos de cada item."
 							acoes={
 								!derivados.aprovado && (
-									<Link
-										href={enderecoDaArea(codigoInep, "compras", { item: ITEM_NOVO })}
-										scroll={false}
-										className={buttonVariants()}
-									>
-										<PlusIcon data-icon="inline-start" />
-										Novo item
-									</Link>
+									<>
+										{dados.itens.length > 0 && (
+											<Link
+												href={enderecoDaArea(codigoInep, "compras", { item: SUGERIR_ITENS })}
+												scroll={false}
+												className={buttonVariants({ variant: "secondary" })}
+											>
+												<SparklesIcon data-icon="inline-start" />
+												Sugerir itens
+											</Link>
+										)}
+										<Link
+											href={enderecoDaArea(codigoInep, "compras", { item: ITEM_NOVO })}
+											scroll={false}
+											className={buttonVariants()}
+										>
+											<PlusIcon data-icon="inline-start" />
+											Novo item
+										</Link>
+									</>
 								)
 							}
 						/>
@@ -68,8 +90,9 @@ export function TelaDeCompras() {
 								</Link>
 							</p>
 						)}
-						{dados.itens.length === 0 && !novo ? (
-							<ListaVazia codigoInep={codigoInep} />
+						{sugestao && <ResumoDaSugestao resultado={sugestao} aoFechar={() => setSugestao(null)} />}
+						{dados.itens.length === 0 && !novo && !sugerindo ? (
+							<ListaVazia codigoInep={codigoInep} saldoLivre={saldoLivre} aoSugerir={aoSugerir} />
 						) : (
 							<>
 								<div role="group" aria-label="Filtrar itens" className="flex flex-wrap gap-1">
@@ -98,10 +121,12 @@ export function TelaDeCompras() {
 										selecionado={selecionado}
 										foraDoPlano={foraDoPlano}
 									/>
-									{(itemAberto || novo) && (
+									{(itemAberto || novo || sugerindo) && (
 										<div className="order-first lg:sticky lg:top-8 lg:order-none">
 											{novo ? (
 												<FormularioDeItem codigoInep={codigoInep} proximaPrioridade={proximaPrioridade} />
+											) : sugerindo ? (
+												<PainelDeSugestao codigoInep={codigoInep} saldoLivre={saldoLivre} aoSugerir={aoSugerir} />
 											) : (
 												itemAberto && (
 													<PainelDoItem

@@ -1,6 +1,7 @@
 import { BellRingIcon, ClipboardCheckIcon, FileTextIcon, HouseIcon, type LucideIcon, ShoppingBagIcon } from "lucide-react";
 
 export const ITEM_NOVO = "novo";
+export const SUGERIR_ITENS = "sugerir";
 
 export type Area = {
 	caminho: string;

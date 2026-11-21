@@ -18,3 +18,6 @@ export * from "./prazo/simulacao";
 export * from "./regras/fontes";
 export * from "./regras/regras";
 export * from "./risco/risco";
+export * from "./sugestao/ia";
+export * from "./sugestao/regras-fixas";
+export * from "./sugestao/sugestao";
