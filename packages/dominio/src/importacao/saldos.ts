@@ -1,8 +1,10 @@
-import { ehCodigoInepValido, type FonteDoDado, type RegistroDeSaldo } from "../escola/escola";
+import { ehCodigoInepValido, type Escola, type FonteDoDado, type RegistroDeSaldo } from "../escola/escola";
+import { ESCOLA_EXEMPLO } from "../exemplos/escola-exemplo";
 import { CATEGORIAS, type Categoria } from "../regras/regras";
 import { type LinhaDoCsv, lerCsv } from "./csv";
 
 type Coluna = "codigoInep" | "exercicio" | Categoria;
+type ColunaOpcional = "nome" | "municipio";
 
 const NOMES_DAS_COLUNAS: Record<Coluna, string[]> = {
 	codigoInep: ["codigoinep", "inep", "codinep", "codigodaescola", "codigoescola"],
@@ -10,6 +12,13 @@ const NOMES_DAS_COLUNAS: Record<Coluna, string[]> = {
 	custeio: ["custeio", "saldocusteio", "valorcusteio"],
 	capital: ["capital", "saldocapital", "valorcapital"],
 };
+
+const NOMES_DAS_COLUNAS_OPCIONAIS: Record<ColunaOpcional, string[]> = {
+	nome: ["nome", "escola", "nomedaescola", "nomeescola"],
+	municipio: ["municipio", "cidade", "municipiouf"],
+};
+
+const TAMANHO_MAXIMO_DO_NOME = 120;
 
 const ROTULOS: Record<Coluna, string> = {
 	codigoInep: "código INEP",
@@ -23,10 +32,14 @@ export type ErroDeImportacao = {
 	mensagem: string;
 };
 
+export type RegistroDaPlanilha = RegistroDeSaldo & Partial<Record<ColunaOpcional, string>>;
+
 export type ImportacaoDeSaldos = {
-	registros: RegistroDeSaldo[];
+	registros: RegistroDaPlanilha[];
 	erros: ErroDeImportacao[];
 };
+
+export type LeituraDaPlanilha = { ok: true; registro: RegistroDaPlanilha } | { ok: false; mensagem: string };
 
 function normalizarCabecalho(texto: string): string {
 	return texto
@@ -74,6 +87,20 @@ function localizarColunas(cabecalho: LinhaDoCsv): Record<Coluna, number> | Colun
 	return faltando.length > 0 ? faltando : indices;
 }
 
+function localizarColunasOpcionais(cabecalho: LinhaDoCsv): Partial<Record<ColunaOpcional, number>> {
+	const normalizados = cabecalho.campos.map(normalizarCabecalho);
+	return Object.fromEntries(
+		(Object.keys(NOMES_DAS_COLUNAS_OPCIONAIS) as ColunaOpcional[]).flatMap((coluna) => {
+			const indice = normalizados.findIndex((nome) => NOMES_DAS_COLUNAS_OPCIONAIS[coluna].includes(nome));
+			return indice === -1 ? [] : [[coluna, indice]];
+		}),
+	);
+}
+
+function textoCurto(texto: string | undefined): string {
+	return (texto ?? "").replace(/\s+/g, " ").trim().slice(0, TAMANHO_MAXIMO_DO_NOME);
+}
+
 export function importarSaldosCsv(texto: string, fonte: FonteDoDado, coletadoEm: Date): ImportacaoDeSaldos {
 	const [cabecalho, ...linhas] = lerCsv(texto);
 	if (!cabecalho) {
@@ -85,7 +112,8 @@ export function importarSaldosCsv(texto: string, fonte: FonteDoDado, coletadoEm:
 		return { registros: [], erros: [{ linha: cabecalho.numero, mensagem: `Faltam as colunas: ${lista}.` }] };
 	}
 
-	const registros: RegistroDeSaldo[] = [];
+	const opcionais = localizarColunasOpcionais(cabecalho);
+	const registros: RegistroDaPlanilha[] = [];
 	const erros: ErroDeImportacao[] = [];
 	const vistos = new Map<string, number>();
 
@@ -124,8 +152,39 @@ export function importarSaldosCsv(texto: string, fonte: FonteDoDado, coletadoEm:
 			continue;
 		}
 		vistos.set(chave, numero);
-		registros.push({ codigoInep, exercicio, saldo, fonte, coletadoEm });
+		const extras = Object.fromEntries(
+			Object.entries(opcionais).flatMap(([coluna, indice]) => {
+				const valor = textoCurto(campos[indice]);
+				return valor ? [[coluna, valor]] : [];
+			}),
+		);
+		registros.push({ codigoInep, exercicio, saldo, fonte, coletadoEm, ...extras });
 	}
 
 	return { registros, erros };
+}
+
+export function lerSaldoDaEscolaNaPlanilha(texto: string, codigoInep: string, fonte: FonteDoDado, coletadoEm: Date): LeituraDaPlanilha {
+	const { registros, erros } = importarSaldosCsv(texto, fonte, coletadoEm);
+	const [registro] = registros.filter((atual) => atual.codigoInep === codigoInep).sort((a, b) => b.exercicio - a.exercicio);
+	if (registro) {
+		return { ok: true, registro };
+	}
+	if (registros.length === 0 && erros.length > 0) {
+		return { ok: false, mensagem: `Não deu para ler a planilha. ${erros[0].mensagem}` };
+	}
+	const detalhe = erros.length > 0 ? ` ${erros[0].mensagem}` : "";
+	return {
+		ok: false,
+		mensagem: `A planilha não tem uma linha válida da escola ${codigoInep}. Confira o código INEP, o exercício e os valores.${detalhe}`,
+	};
+}
+
+export function escolaDaPlanilha({ codigoInep, nome, municipio }: RegistroDaPlanilha): Escola {
+	const exemplo = codigoInep === ESCOLA_EXEMPLO.codigoInep ? ESCOLA_EXEMPLO : null;
+	return {
+		codigoInep,
+		nome: nome || exemplo?.nome || `Escola ${codigoInep}`,
+		municipio: municipio || exemplo?.municipio || "Município não informado",
+	};
 }

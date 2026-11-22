@@ -88,6 +88,7 @@ export const paraBusca = internalQuery({
 			.collect();
 		return {
 			descricao: item.descricao,
+			tipo: item.tipo,
 			editavel: plano.status !== "aprovado",
 			buscaDePrecoEm: item.buscaDePrecoEm ?? null,
 			enderecos: orcamentos.flatMap(({ endereco }) => (endereco ? [endereco] : [])),

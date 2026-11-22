@@ -1,4 +1,4 @@
-import { LIMITES, validarCotacao } from "@aloca/dominio";
+import { cotacoesDeExemplo, LIMITES, ORCAMENTOS_EXIGIDOS, validarCotacao } from "@aloca/dominio";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, type MutationCtx } from "./_generated/server";
@@ -52,5 +52,23 @@ export const registrarDaBusca = internalMutation({
 		const agora = Date.now();
 		await Promise.all(novas.map((cotacao) => ctx.db.insert("orcamento", { itemId, ...cotacao, origem: "busca", coletadoEm: agora })));
 		return novas.length;
+	},
+});
+
+export const registrarExemplos = internalMutation({
+	args: { itemId: v.id("item") },
+	handler: async (ctx, { itemId }) => {
+		const { item } = await itemEditavel(ctx, itemId);
+		const existentes = await orcamentosDoItem(ctx, itemId);
+		const cotacoes = cotacoesDeExemplo(
+			item,
+			existentes.map(({ fornecedor }) => fornecedor),
+			ORCAMENTOS_EXIGIDOS - existentes.length,
+		);
+		const agora = Date.now();
+		await Promise.all(
+			cotacoes.map((cotacao) => ctx.db.insert("orcamento", { itemId, ...cotacao, origem: "exemplo", coletadoEm: agora })),
+		);
+		return cotacoes.length;
 	},
 });

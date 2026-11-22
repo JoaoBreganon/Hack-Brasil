@@ -12,7 +12,7 @@ import { action, type ActionCtx, internalAction } from "./_generated/server";
 import { falhar, mensagemDoErro } from "./lib/falha";
 import { buscarComTempoLimite } from "./lib/requisicao";
 
-const SUGESTAO_DE_PLANILHA = "Tente de novo mais tarde ou importe o saldo por planilha (saldos:importarCsv).";
+const SUGESTAO_DE_PLANILHA = "Tente de novo mais tarde ou importe o saldo por planilha CSV.";
 const TEMPO_LIMITE_EM_MS = 20_000;
 const AGENTE = "Aloca/0.1 (+https://github.com/JoaoBreganon/Hack-Brasil)";
 const MINUTO_EM_MS = 60_000;
@@ -25,10 +25,10 @@ async function lerSituacao(codigoInep: string, exercicio: number): Promise<Situa
 		{ headers: { "User-Agent": AGENTE } },
 		TEMPO_LIMITE_EM_MS,
 	).catch((erro: unknown) => {
-		throw new Error(`O PDDE Info não respondeu (${mensagemDoErro(erro)}). ${SUGESTAO_DE_PLANILHA}`);
+		throw new Error(`O PDDE Info não respondeu (${mensagemDoErro(erro)}).`);
 	});
 	if (!resposta.ok) {
-		throw new Error(`O PDDE Info respondeu ${resposta.status}. ${SUGESTAO_DE_PLANILHA}`);
+		throw new Error(`O PDDE Info respondeu ${resposta.status}.`);
 	}
 	return lerConsultaPorEscola(await resposta.text(), codigoInep);
 }
@@ -68,6 +68,7 @@ export const consultar = action({
 		if (coletaRecente) {
 			return { codigoInep };
 		}
+		await ctx.runMutation(internal.usos.registrar, { acao: "consulta ao PDDE Info" });
 		const anoAtual = new Date().getUTCFullYear();
 		try {
 			const situacao = (await lerSituacao(codigoInep, anoAtual)) ?? (await lerSituacao(codigoInep, anoAtual - 1));
@@ -84,7 +85,7 @@ export const consultar = action({
 			if (jaTemSaldo) {
 				return { codigoInep, aviso: `Mostrando o último saldo salvo. ${mensagemDoErro(erro)}` };
 			}
-			falhar(mensagemDoErro(erro));
+			falhar(`${mensagemDoErro(erro)} ${SUGESTAO_DE_PLANILHA}`);
 		}
 	},
 });

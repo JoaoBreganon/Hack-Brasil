@@ -4,6 +4,7 @@ import { mutation, query } from "./_generated/server";
 import { buscarEscola } from "./escolas";
 import { falhar } from "./lib/falha";
 import { papelDoContato } from "./schema";
+import { registrarUso } from "./usos";
 
 export const daEscola = query({
 	args: { codigoInep: v.string() },
@@ -30,6 +31,9 @@ export const salvar = mutation({
 			.query("contato")
 			.withIndex("por_escola_papel", (q) => q.eq("escolaId", escola._id).eq("papel", papel))
 			.unique();
+		if (existente?.celular !== celular) {
+			await registrarUso(ctx, "contato");
+		}
 		if (existente) {
 			await ctx.db.patch(existente._id, { nome, celular });
 			return existente._id;
@@ -41,6 +45,9 @@ export const salvar = mutation({
 export const remover = mutation({
 	args: { contatoId: v.id("contato") },
 	handler: async (ctx, { contatoId }) => {
+		if (!(await ctx.db.get(contatoId))) {
+			falhar("Este celular já foi removido.");
+		}
 		await ctx.db.delete(contatoId);
 	},
 });

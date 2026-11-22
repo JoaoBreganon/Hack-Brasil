@@ -1,6 +1,13 @@
 "use client";
 
-import { formatarReais, LIMITES, ORCAMENTOS_EXIGIDOS, REGRAS_POR_TIPO } from "@aloca/dominio";
+import {
+	formatarReais,
+	LIMITES,
+	type MotivoDoExemplo,
+	ORCAMENTOS_EXIGIDOS,
+	REGRAS_POR_TIPO,
+	type ResultadoDaBuscaDePrecos,
+} from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import { useAction, useMutation } from "convex/react";
 import { ExternalLinkIcon, PencilLineIcon, SearchIcon, Trash2Icon } from "lucide-react";
@@ -24,6 +31,31 @@ const ORIGEM: Record<Orcamento["origem"], string> = {
 	busca: "Achado na internet",
 	exemplo: "Orçamento de exemplo",
 };
+
+const MOTIVO_DO_EXEMPLO: Record<MotivoDoExemplo, string> = {
+	"sem configuração": "A busca de preços nas lojas da internet ainda não está ligada.",
+	falha: "A busca de preços nas lojas da internet não respondeu.",
+	"sem preço": "A busca não achou preços novos deste item nas lojas da internet.",
+	limite: "A busca de preços nas lojas da internet chegou ao limite da hora.",
+};
+
+function avisoDaBusca(resultado: ResultadoDaBuscaDePrecos): { tipo: "success" | "warning" | "info"; mensagem: string } {
+	const { encontrados } = resultado;
+	if (resultado.origem === "busca") {
+		return encontrados > 0
+			? {
+					tipo: "success",
+					mensagem: `${encontrados} ${encontrados === 1 ? "preço novo achado" : "preços novos achados"} em lojas da internet.`,
+				}
+			: { tipo: "info", mensagem: "Nenhum preço novo nas lojas. Anote os orçamentos que a escola tiver." };
+	}
+	const motivo = MOTIVO_DO_EXEMPLO[resultado.motivo];
+	if (encontrados === 0) {
+		return { tipo: "info", mensagem: `${motivo} O item já tem ${ORCAMENTOS_EXIGIDOS} orçamentos, então nada mudou.` };
+	}
+	const quantos = encontrados === 1 ? "Entrou 1 preço de exemplo" : `Entraram ${encontrados} preços de exemplo`;
+	return { tipo: "warning", mensagem: `${motivo} ${quantos}, só para ilustrar. Troque pelos orçamentos reais da escola.` };
+}
 
 type Propriedades = {
 	codigoInep: string;
@@ -87,16 +119,13 @@ export function PainelDoItem({ codigoInep, item, bloqueado }: Propriedades) {
 	async function buscarPrecos() {
 		const resultado = await buscar.executar({ itemId: item._id });
 		if (resultado) {
-			toast[resultado.encontrados > 0 ? "success" : "info"](
-				resultado.encontrados > 0
-					? `${resultado.encontrados} preços novos encontrados.`
-					: "Nenhum preço novo. Anote os orçamentos que a escola tiver.",
-			);
+			const { tipo, mensagem } = avisoDaBusca(resultado);
+			toast[tipo](mensagem);
 		}
 	}
 
 	async function removerItem() {
-		if ((await remover.executar({ itemId: item._id })) !== null) {
+		if ((await remover.executar({ itemId: item._id })) !== undefined) {
 			roteador.replace(enderecoDaArea(codigoInep, "compras"), { scroll: false });
 		}
 	}
@@ -138,7 +167,7 @@ export function PainelDoItem({ codigoInep, item, bloqueado }: Propriedades) {
 					<FormularioDeOrcamento itemId={item._id} aoTerminar={() => setAnotando(false)} />
 				) : (
 					<div className="flex flex-wrap gap-2">
-						<Button variant="secondary" onClick={buscarPrecos} disabled={buscar.executando || cheio}>
+						<Button variant="secondary" onClick={buscarPrecos} disabled={buscar.executando || cheio || !regra.permitido}>
 							{buscar.executando ? <Spinner data-icon="inline-start" /> : <SearchIcon data-icon="inline-start" />}
 							{buscar.executando ? "Buscando…" : "Buscar preços"}
 						</Button>

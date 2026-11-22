@@ -16,6 +16,7 @@ import type * as planos from "../planos.js";
 import type * as precos from "../precos.js";
 import type * as saldos from "../saldos.js";
 import type * as sugestoes from "../sugestoes.js";
+import type * as usos from "../usos.js";
 import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 declare const fullApi: ApiFromModules<{
 	alertas: typeof alertas;
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
 	precos: typeof precos;
 	saldos: typeof saldos;
 	sugestoes: typeof sugestoes;
+	usos: typeof usos;
 }>;
 export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
 export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, "internal">>;

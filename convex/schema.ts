@@ -1,4 +1,5 @@
 import {
+	ACOES_LIMITADAS,
 	CANAIS_DO_ALERTA,
 	NIVEIS_DE_RISCO,
 	ORIGENS_DO_ORCAMENTO,
@@ -33,6 +34,7 @@ export const tipoDeDespesa = umDos(TIPOS_DE_DESPESA);
 export const papelDoContato = umDos(PAPEIS_DO_CONTATO);
 export const nivelDeRisco = umDos(NIVEIS_DE_RISCO);
 export const canalDoAlerta = umDos(CANAIS_DO_ALERTA);
+export const acaoLimitada = umDos(ACOES_LIMITADAS);
 
 export const pendenciaDoPdde = v.object({
 	entidade: umDos(["UEx", "EEx", "EM"] as const),
@@ -104,4 +106,9 @@ export default defineSchema({
 	})
 		.index("por_escola_criacao", ["escolaId", "criadoEm"])
 		.index("por_envio", ["enviadoEm"]),
+
+	uso: defineTable({
+		acao: acaoLimitada,
+		em: v.number(),
+	}).index("por_acao_em", ["acao", "em"]),
 });

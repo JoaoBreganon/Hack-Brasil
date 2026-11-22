@@ -18,12 +18,12 @@ Um ciclo só: **detectar → decidir → executar → mostrar**.
 
 | Etapa | O que a plataforma faz |
 |---|---|
-| Detectar | Saldo por conta, repasses e pendências de cada escola, coletados no PDDE Info |
-| Decidir | Risco de estorno com contagem de dias úteis e plano de compra sugerido por IA, cruzando saldo, necessidades da escola (Censo Escolar) e regras do programa |
-| Executar | Pesquisa de 3 preços por item, ata da Unidade Executora e consolidação de preços em PDF |
-| Mostrar | Página pública da escola com o que recebeu, o que planejou e o que ainda está parado |
+| Detectar | Saldo, repasses e pendências de cada escola, lidos no PDDE Info (ou importados por planilha CSV quando o site está fora do ar) |
+| Decidir | Risco de estorno com contagem de dias úteis e plano de compra sugerido por IA, cruzando saldo, o que a escola precisa e regras do programa |
+| Executar | Pesquisa de 3 preços por item, ata da Unidade Executora e mapa de preços em PDF |
+| Mostrar | Próximo passo: página pública da escola com o que recebeu, o que planejou e o que ainda está parado |
 
-O plano de compra é a entrega principal, com um contador de dias até o prazo no topo. Alertas por e-mail avisam diretor e tesoureiro quando o prazo se aproxima ou surge uma pendência, e a secretaria recebe um resumo semanal da rede.
+O plano de compra é a entrega principal, com um contador de dias até o prazo no topo. Alertas por WhatsApp, com SMS de reserva, avisam diretor e tesoureiro quando o prazo se aproxima. Alertas por e-mail e o resumo semanal da rede para a secretaria estão no roteiro depois do hackathon.
 
 A prestação de contas continua no sistema oficial do FNDE. A plataforma cuida do que vem antes dela.
 
@@ -32,59 +32,75 @@ A prestação de contas continua no sistema oficial do FNDE. A plataforma cuida 
 * **Resolve, não só avisa:** o governo já mostra o saldo; nós entregamos o plano de compra, os preços e a ata.
 * **Cada sugestão cita a regra** que a permite, com aprovação humana obrigatória.
 * **Feito para o diretor:** linguagem simples e prazo sempre visível.
-* **Consulta aberta:** qualquer escola vê sua situação pelo código INEP.
+* **Sem senha:** a escola entra só com o código INEP. A consulta aberta para pais e conselho é o próximo passo.
 
 ## 👥 Para quem
 
 | Perfil | Uso |
 |---|---|
 | Diretor e Unidade Executora (APM, caixa escolar) | Alerta de prazo, plano de compra, preços e ata |
-| Secretaria de educação | Painel da rede com escolas em risco e pendências |
-| Pais e conselho escolar | Página pública com o que a escola recebeu e gastou |
+| Secretaria de educação | Próximo passo: painel da rede com escolas em risco e pendências |
+| Pais e conselho escolar | Próximo passo: página pública com o que a escola recebeu e gastou |
 
 Quem contrata é a **secretaria de educação**, com assinatura por escola. É ela que analisa as contas das escolas da rede, e pendência na prestação de contas suspende o repasse. Escolas e famílias não pagam.
 
 ## ⚙️ Como funciona
 
-1. Rotinas agendadas coletam os dados do PDDE Info por rede, ou sob demanda na consulta aberta.
+1. O diretor digita o código INEP e uma ação do Convex lê o saldo na consulta pública do PDDE Info. Se o site estiver fora do ar, o saldo entra por uma planilha CSV na própria tela da escola.
 2. Os dados entram no banco com fonte e horário da coleta.
 3. O motor de regras calcula o risco de estorno, os dias úteis até o prazo e as pendências.
 4. A IA sugere os itens do plano de compra (sem chave de IA, regras fixas fazem isso) e um validador barra o que o PDDE não paga antes de salvar.
-5. O sistema busca preços e gera os documentos em PDF.
-6. Alertas são enviados e a área do diretor, o painel e a página pública atualizam em tempo real.
+5. O Firecrawl busca três preços por item nas lojas. Sem a chave, ou quando a busca falha ou não acha preço, entram preços de exemplo, marcados como exemplo para o diretor trocar pelos orçamentos reais.
+6. Com o plano aprovado, a ata da APM e o mapa de preços saem prontos para imprimir ou salvar em PDF.
+7. Uma rotina diária manda o alerta de prazo por WhatsApp ou SMS (Nvoip), e a área do diretor atualiza em tempo real.
 
 ## 🏗️ Arquitetura
 
+O que está no ar hoje fica no bloco de cima. O tracejado é o roteiro depois do hackathon.
+
 ```mermaid
 flowchart TD
-    A[Fontes: PDDE Info, Censo INEP, lojas] --> B[Coleta: Firecrawl + rotinas Convex]
-    B --> C[Dados e regras: Convex, motor de risco do PDDE]
-    C --> D[Inteligência: IA para o plano de compra + validador de regras]
-    D --> E[Ações: PDFs, alertas Resend, página pública]
-    E --> F[Interfaces: área do diretor, painel da secretaria, consulta aberta]
-    G[WorkOS: login] --> F
+    subgraph hoje [No ar hoje]
+        A[Fontes: PDDE Info, planilha CSV de reserva, lojas on-line] --> B[Coleta: ações do Convex + Firecrawl, com preços de exemplo de reserva]
+        B --> C[Dados e regras: Convex + pacote de domínio, motor de risco e prazo do PDDE]
+        C --> D[Inteligência: IA com saída estruturada ou regras fixas, sempre pelo validador do PDDE]
+        D --> E[Ações: ata e mapa de preços em PDF, alertas por WhatsApp e SMS da Nvoip]
+        E --> F[Interface: área do diretor, entrada pelo código INEP]
+    end
+    subgraph depois [Próximos passos]
+        G[Login: WorkOS]
+        H[E-mails: Resend + React Email]
+        I[Painel da secretaria]
+        J[Consulta aberta e página pública da escola]
+        K[Censo Escolar e coleta agendada por rede]
+    end
+    F -.-> G
+    F -.-> H
+    F -.-> I
+    F -.-> J
+    C -.-> K
 ```
 
 ## 🧰 Tecnologias
 
-| Camada | Tecnologia |
-|---|---|
-| Frontend | Next.js, Tailwind CSS, shadcn/ui |
-| Backend e banco | Convex (dados em tempo real e rotinas agendadas) |
-| Coleta de dados | Consulta pública do PDDE Info (ação Convex) e Firecrawl (lojas) |
-| IA | LLM com saída estruturada e validação por regras |
-| Documentos | Ata e mapa de preços em página de impressão, salvos em PDF pelo navegador |
-| Login | WorkOS |
-| E-mail | Resend + React Email |
-| WhatsApp e SMS | Nvoip (template aprovado pela Meta, SMS como reserva) |
-| Hospedagem | Vercel |
-| Testes | Vitest e convex-test |
+| Camada | Tecnologia | Situação |
+|---|---|---|
+| Frontend | Next.js 16, Tailwind CSS 4, shadcn/ui | No ar |
+| Backend e banco | Convex (dados em tempo real, ações e rotina diária de alertas) | No ar |
+| Coleta de dados | Consulta pública do PDDE Info (ação Convex), planilha CSV de reserva e Firecrawl (lojas) | No ar |
+| IA | LLM compatível com a API da OpenAI, com saída estruturada, regras fixas de reserva e validador | No ar |
+| Documentos | Ata e mapa de preços em página de impressão, salvos em PDF pelo navegador | No ar |
+| WhatsApp e SMS | Nvoip (template aprovado pela Meta, SMS como reserva) | No ar |
+| Hospedagem | Vercel (site) e Convex (funções e banco) | No ar |
+| Testes | Vitest, convex-test e Playwright | No ar |
+| Login | WorkOS | Próximo passo |
+| E-mail | Resend + React Email | Próximo passo |
 
 ## 📊 Fontes de dados
 
-* **PDDE Info (FNDE):** saldos, repasses e pendências por escola, na consulta pública por código INEP. O PDDE Info não separa o saldo entre custeio e capital, então a divisão segue a proporção dos repasses do ano. Se o site estiver fora do ar, o saldo entra por planilha CSV.
-* **Censo Escolar e Catálogo de Escolas (INEP):** infraestrutura e dados de cada escola.
-* **Lojas on-line:** preços para a pesquisa de três orçamentos.
+* **PDDE Info (FNDE):** saldos, repasses e pendências por escola, na consulta pública por código INEP. O PDDE Info não separa o saldo entre custeio e capital, então a divisão segue a proporção dos repasses do ano. Se o site estiver fora do ar, o diretor clica em **Importar planilha CSV** na tela da escola. A planilha precisa das colunas código INEP, exercício, custeio e capital (nome da escola e município são opcionais) e de uma linha com o código INEP da escola. Ela só entra numa escola que ainda não tem saldo salvo, para não sobrescrever o que veio do PDDE Info.
+* **Lojas on-line:** preços para a pesquisa de três orçamentos, pelo Firecrawl. Sem a chave, ou quando a busca falha ou não acha preço, entram até três preços de exemplo do mesmo tipo do item, guardados com origem "exemplo" e avisados ao diretor.
+* **Censo Escolar e Catálogo de Escolas (INEP):** infraestrutura e dados de cada escola. Próximo passo.
 
 Todo número exibido guarda a fonte e o momento da coleta.
 
@@ -117,7 +133,9 @@ NEXT_PUBLIC_CONVEX_URL=
 CONVEX_SITE_URL=
 ```
 
-As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Sem elas, a busca de preços e o envio de alertas avisam que não estão configurados e o resto funciona.
+`E2E_URL` e `E2E_PORTA`, também no `.env.example`, são opcionais e só valem para os testes de ponta a ponta.
+
+As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Nenhuma é obrigatória para a demo: sem a `FIRECRAWL_API_KEY` a busca de preços usa preços de exemplo, sem a `LLM_API_KEY` a sugestão de itens usa as regras fixas, e sem as chaves da Nvoip o envio de alertas avisa que não está configurado. Login (WorkOS) e e-mail (Resend) ainda não estão no código, então não precisam de chave.
 
 ```bash
 npx convex env set FIRECRAWL_API_KEY fc-...
@@ -144,9 +162,27 @@ A `LLM_API_KEY` liga a sugestão de itens por IA em Compras. O Convex manda ao m
 | `pnpm convex:dev` | sobe o backend Convex |
 | `pnpm convex:limpar` | tira os comentários que o Convex escreve em `convex/_generated` (rodar antes de cada commit que mexer no Convex) |
 | `pnpm test` | roda os testes do domínio e das funções do Convex |
-| `pnpm typecheck` | confere os tipos de todos os pacotes |
+| `pnpm test:e2e` | roda os testes de ponta a ponta do diretor no navegador (Playwright) |
+| `pnpm typecheck` | confere os tipos de todos os pacotes, do Convex e dos testes de ponta a ponta |
 | `pnpm lint` | roda o ESLint |
+| `pnpm build` | gera o build de produção do site, o mesmo da Vercel |
 | `pnpm format` | formata o código com tab (Prettier) |
+
+**Testes de ponta a ponta**
+
+Os testes em `e2e/` percorrem o caminho do diretor no navegador: página inicial, entrada pelo código INEP da escola de demonstração (35079923), saldo e calendário do prazo no Início, compras com o item vedado barrado e a busca de preços, aprovação do plano, ata da APM com o mapa de preços, alertas e o menu no celular.
+
+```bash
+pnpm exec playwright install chromium
+pnpm convex:dev
+pnpm test:e2e
+```
+
+* **Convex:** os testes precisam de um Convex com as funções atuais. O `pnpm convex:dev` publica as funções no deployment de desenvolvimento e grava `NEXT_PUBLIC_CONVEX_URL` no `.env.local`, que o Playwright lê. Sem essa variável o Playwright para antes de começar e diz o que falta.
+* **Site:** o Playwright sobe o `next dev` na porta 3000, ou usa o que já estiver rodando nela. `E2E_PORTA` troca a porta. `E2E_URL` aponta os testes para um site já publicado, como uma prévia da Vercel, sem subir servidor.
+* **Dados:** cada execução cria no Convex uma escola fictícia com código INEP começando em 99 (nenhum estado usa esse código) e carrega o saldo dela pela planilha CSV, então os testes não dependem do PDDE Info nem de chaves. A escola de demonstração passa só pela consulta ao PDDE Info, como qualquer visita, e o plano dela não é tocado. Se o PDDE Info estiver fora do ar, o teste segue pelo atalho da planilha CSV. Não rode contra a produção, para não deixar escolas fictícias lá.
+* **Chaves:** sem chaves no Convex, os testes passam pelos preços de exemplo e pelas regras fixas. Com a `FIRECRAWL_API_KEY` ou a `LLM_API_KEY` configuradas, os testes aceitam o resultado real, mas demoram mais e gastam créditos. O teste nunca cadastra celular, então nenhum alerta sai.
+* **Falhas:** o relatório fica em `playwright-report/` (`pnpm exec playwright show-report`) e os rastros em `test-results/`.
 
 ## 🗂️ Estrutura
 
@@ -163,15 +199,17 @@ apps/web/              Next.js: área do diretor
 convex/                banco, funções e rotinas agendadas
   lib/                 Firecrawl, Nvoip, IA (LLM), requisição com tempo limite e regras do plano
   pddeInfo.ts          coleta do saldo no PDDE Info
+  saldos.ts            saldo coletado e importação por planilha CSV quando o PDDE Info cai
   painel.ts            tudo o que as telas da escola mostram, numa consulta só
   sugestoes.ts         sugestão de itens pela IA ou pelas regras fixas, sempre pelo validador
-  itens.ts, orcamentos.ts, planos.ts, precos.ts, contatos.ts, alertas.ts, crons.ts
+  precos.ts            busca de preços no Firecrawl, com preços de exemplo de reserva
+  itens.ts, orcamentos.ts, planos.ts, contatos.ts, alertas.ts, crons.ts
 packages/dominio/      regras do PDDE, sem dependências externas e com testes
   src/calendario/      dias úteis, feriados nacionais, Carnaval e os meses do calendário do prazo
   src/prazo/           10º dia útil de fevereiro e estorno
   src/risco/           nível de risco de perder o saldo
   src/regras/          o que pode e o que não pode ser comprado, com a norma citada
-  src/orcamento/       três orçamentos e menor preço
+  src/orcamento/       três orçamentos, menor preço, leitura da busca nas lojas e preços de exemplo
   src/plano/           plano de compra dentro do saldo de cada categoria
   src/sugestao/        sugestão de itens: esquema da IA, regras fixas sem chave e validador que barra despesa vedada
   src/formato/         moeda e data em pt-BR
@@ -180,6 +218,7 @@ packages/dominio/      regras do PDDE, sem dependências externas e com testes
   src/ata/             texto da ata da APM e mapa de preços
   src/contato/         celular com DDD e máscara
   src/exemplos/        escola exemplo da demo
+e2e/                   testes de ponta a ponta do diretor (Playwright), configurados em playwright.config.ts
 ```
 
 ## 🏆 Hack Brasil 2026

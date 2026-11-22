@@ -1,4 +1,4 @@
-import { REGRAS_POR_TIPO } from "@aloca/dominio";
+import { type AcaoLimitada, REGRAS_POR_TIPO, type TipoDeDespesa, USOS_POR_HORA } from "@aloca/dominio";
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
@@ -52,6 +52,35 @@ function semChaveDaIa() {
 	vi.stubEnv("LLM_API_KEY", "");
 	vi.stubGlobal("fetch", chamada);
 	return chamada;
+}
+
+const RESPOSTA_DO_FIRECRAWL = {
+	data: {
+		web: [
+			{ url: "https://loja-b.com.br/roteador", json: { loja: "Loja B", preco: "529,00" } },
+			{ url: "https://loja-a.com.br/roteador", json: { loja: "Loja A", preco: "R$ 499,90" } },
+			{ url: "https://loja-c.com.br/roteador", json: { loja: "Loja C", preco: 545.5 } },
+			{ url: "https://loja-d.com.br/roteador", json: { loja: "Loja D", preco: "" } },
+		],
+	},
+};
+
+function firecrawlRespondendo(corpo: unknown, status = 200) {
+	const chamada = vi.fn(async (_endereco: string | URL | Request, _opcoes?: RequestInit) => respostaJson(corpo, status));
+	vi.stubEnv("FIRECRAWL_API_KEY", "fc-teste");
+	vi.stubGlobal("fetch", chamada);
+	return chamada;
+}
+
+function itemParaBusca(t: Teste, tipo: TipoDeDespesa = "material permanente", descricao = "Roteador Wi-Fi 6") {
+	return t.mutation(api.itens.adicionar, { codigoInep: INEP, descricao, tipo, quantidade: 1, prioridade: 1 });
+}
+
+async function orcamentosSalvos(t: Teste) {
+	const orcamentos = await t.run((ctx) => ctx.db.query("orcamento").collect());
+	return orcamentos
+		.map(({ fornecedor, valorEmCentavos, endereco, origem }) => ({ fornecedor, valorEmCentavos, endereco, origem }))
+		.sort((a, b) => a.valorEmCentavos - b.valorEmCentavos);
 }
 
 async function descricoesSalvas(t: Teste) {
@@ -177,7 +206,133 @@ describe("plano de compra", () => {
 	});
 });
 
+describe("importação do saldo por planilha", () => {
+	const PLANILHA = ["Código INEP;Exercício;Custeio;Capital", `${INEP};2026;15.839,32;3.959,83`, "99000002;2026;1,00;1,00"].join("\n");
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it("carrega o saldo pela planilha quando o PDDE Info está fora do ar", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => new Response("", { status: 503 })),
+		);
+		const t = convexTest(schema, MODULOS);
+		await expect(t.action(api.pddeInfo.consultar, { codigoInep: INEP })).rejects.toThrow("importe o saldo por planilha CSV");
+		const resultado = await t.mutation(api.saldos.importarPlanilha, { codigoInep: INEP, texto: PLANILHA, nomeDoArquivo: "saldos.csv" });
+		expect(resultado).toEqual({ exercicio: 2026, saldo: COLETA.saldo });
+		const painel = await t.query(api.painel.daEscola, { codigoInep: INEP });
+		expect(painel?.escola).toEqual(ESCOLA);
+		expect(painel?.saldo).toMatchObject({
+			exercicio: 2026,
+			saldo: COLETA.saldo,
+			fonte: { nome: "Planilha saldos.csv" },
+			pendencias: [],
+		});
+		expect(await t.run((ctx) => ctx.db.query("escola").collect())).toHaveLength(1);
+	});
+
+	it("cria a escola com o nome e o município da planilha", async () => {
+		const t = convexTest(schema, MODULOS);
+		const texto = [
+			"INEP;Escola;Município;Exercício;Custeio;Capital",
+			"99000001;EMEF Jardim das Flores;Bauru/SP;2026;100,00;50,00",
+		].join("\n");
+		await t.mutation(api.saldos.importarPlanilha, { codigoInep: "99000001", texto, nomeDoArquivo: "  minha   planilha.csv " });
+		const painel = await t.query(api.painel.daEscola, { codigoInep: "99000001" });
+		expect(painel?.escola).toEqual({ codigoInep: "99000001", nome: "EMEF Jardim das Flores", municipio: "Bauru/SP" });
+		expect(painel?.saldo?.fonte).toEqual({ nome: "Planilha minha planilha.csv" });
+	});
+
+	it("mantém o nome da escola já cadastrada sem saldo", async () => {
+		const t = convexTest(schema, MODULOS);
+		await t.mutation(internal.escolas.cadastrar, { codigoInep: "99000002", nome: "EMEF Vila Nova", municipio: "Marília/SP" });
+		await t.mutation(api.saldos.importarPlanilha, { codigoInep: "99000002", texto: PLANILHA, nomeDoArquivo: "saldos.csv" });
+		const painel = await t.query(api.painel.daEscola, { codigoInep: "99000002" });
+		expect(painel?.escola.nome).toBe("EMEF Vila Nova");
+		expect(painel?.saldo?.saldo).toEqual({ custeio: 100, capital: 100 });
+	});
+
+	it("recusa planilha sem a escola, código inválido, arquivo grande e escola que já tem saldo", async () => {
+		const t = convexTest(schema, MODULOS);
+		const importar = (codigoInep: string, texto = PLANILHA) =>
+			t.mutation(api.saldos.importarPlanilha, { codigoInep, texto, nomeDoArquivo: "saldos.csv" });
+		await expect(importar("99000003")).rejects.toThrow("não tem uma linha válida da escola 99000003");
+		await expect(importar("1234")).rejects.toThrow("8 dígitos");
+		await expect(importar(INEP, "a".repeat(500_001))).rejects.toThrow("grande demais");
+		await expect(importar(INEP, "inep;total")).rejects.toThrow("Faltam as colunas");
+		expect(await t.run((ctx) => ctx.db.query("escola").collect())).toEqual([]);
+		const comSaldo = await escolaComSaldo();
+		await expect(
+			comSaldo.mutation(api.saldos.importarPlanilha, { codigoInep: INEP, texto: PLANILHA, nomeDoArquivo: "saldos.csv" }),
+		).rejects.toThrow("já tem saldo");
+	});
+});
+
+describe("limites das ações abertas", () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	async function encherUsos(t: Teste, acao: AcaoLimitada, em = Date.now()) {
+		await t.run(async (ctx) => {
+			for (let indice = 0; indice < USOS_POR_HORA[acao]; indice += 1) {
+				await ctx.db.insert("uso", { acao, em });
+			}
+		});
+	}
+
+	it("barra novos celulares depois do limite da hora, mas deixa trocar só o nome", async () => {
+		const t = await escolaComSaldo();
+		await t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "diretor", nome: "Maria", celular: "(18) 99123-4567" });
+		await encherUsos(t, "contato");
+		await t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "diretor", nome: "Maria Souza", celular: "(18) 99123-4567" });
+		await expect(
+			t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "tesoureiro", nome: "João", celular: "(18) 99123-0000" }),
+		).rejects.toThrow("Muitos celulares");
+		expect(await t.query(api.contatos.daEscola, { codigoInep: INEP })).toEqual([expect.objectContaining({ nome: "Maria Souza" })]);
+	});
+
+	it("não consulta o PDDE Info depois do limite da hora", async () => {
+		const chamada = vi.fn();
+		vi.stubGlobal("fetch", chamada);
+		const t = convexTest(schema, MODULOS);
+		await encherUsos(t, "consulta ao PDDE Info");
+		await expect(t.action(api.pddeInfo.consultar, { codigoInep: INEP })).rejects.toThrow("Muitas consultas ao PDDE Info");
+		expect(chamada).not.toHaveBeenCalled();
+	});
+
+	it("barra planilhas depois do limite da hora e esquece os usos antigos", async () => {
+		const t = convexTest(schema, MODULOS);
+		const texto = ["inep;exercicio;custeio;capital", "99000001;2026;1,00;1,00", "99000002;2026;1,00;1,00"].join("\n");
+		await encherUsos(t, "planilha");
+		await expect(t.mutation(api.saldos.importarPlanilha, { codigoInep: "99000001", texto, nomeDoArquivo: "s.csv" })).rejects.toThrow(
+			"Muitas planilhas",
+		);
+		await t.run(async (ctx) => {
+			for (const { _id } of await ctx.db.query("uso").collect()) {
+				await ctx.db.patch(_id, { em: Date.now() - 2 * 60 * 60_000 });
+			}
+		});
+		await t.mutation(api.saldos.importarPlanilha, { codigoInep: "99000001", texto, nomeDoArquivo: "s.csv" });
+		expect((await t.run((ctx) => ctx.db.query("uso").collect())).length).toBeLessThan(USOS_POR_HORA.planilha);
+	});
+});
+
 describe("contatos", () => {
+	it("avisa quando o celular já foi removido", async () => {
+		const t = await escolaComSaldo();
+		const contatoId = await t.mutation(api.contatos.salvar, {
+			codigoInep: INEP,
+			papel: "diretor",
+			nome: "Maria",
+			celular: "(18) 99123-4567",
+		});
+		await t.mutation(api.contatos.remover, { contatoId });
+		await expect(t.mutation(api.contatos.remover, { contatoId })).rejects.toThrow("já foi removido");
+	});
+
 	it("guarda um contato por papel e só devolve o celular mascarado", async () => {
 		const t = await escolaComSaldo();
 		await t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "diretor", nome: "Maria", celular: "(18) 99123-4567" });
@@ -215,17 +370,85 @@ describe("limites de uso", () => {
 		expect(await t.query(internal.itens.buscasDesde, { desde: 4_000 })).toBe(1);
 		expect(await t.query(internal.itens.buscasDesde, { desde: 6_000 })).toBe(0);
 	});
+});
 
-	it("pede a chave do Firecrawl antes de buscar preços", async () => {
+describe("busca de preços", () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it("guarda os preços das lojas achados pelo Firecrawl", async () => {
+		const chamada = firecrawlRespondendo(RESPOSTA_DO_FIRECRAWL);
 		const t = await escolaComSaldo();
-		const itemId = await t.mutation(api.itens.adicionar, {
-			codigoInep: INEP,
-			descricao: "Roteador",
-			tipo: "material permanente",
-			quantidade: 1,
-			prioridade: 1,
-		});
-		await expect(t.action(api.precos.buscar, { itemId })).rejects.toThrow("não está configurada");
+		const itemId = await itemParaBusca(t);
+		expect(await t.action(api.precos.buscar, { itemId })).toEqual({ origem: "busca", encontrados: 3 });
+		const [endereco, opcoes] = chamada.mock.calls[0];
+		expect(endereco).toBe("https://api.firecrawl.dev/v2/search");
+		expect(opcoes?.headers).toMatchObject({ Authorization: "Bearer fc-teste" });
+		expect(await orcamentosSalvos(t)).toEqual([
+			{ fornecedor: "Loja A", valorEmCentavos: 49_990, endereco: "https://loja-a.com.br/roteador", origem: "busca" },
+			{ fornecedor: "Loja B", valorEmCentavos: 52_900, endereco: "https://loja-b.com.br/roteador", origem: "busca" },
+			{ fornecedor: "Loja C", valorEmCentavos: 54_550, endereco: "https://loja-c.com.br/roteador", origem: "busca" },
+		]);
+	});
+
+	it("usa preços de exemplo quando a FIRECRAWL_API_KEY não está configurada", async () => {
+		const chamada = vi.fn();
+		vi.stubEnv("FIRECRAWL_API_KEY", "");
+		vi.stubGlobal("fetch", chamada);
+		const t = await escolaComSaldo();
+		const itemId = await itemParaBusca(t);
+		expect(await t.action(api.precos.buscar, { itemId })).toEqual({ origem: "exemplo", encontrados: 3, motivo: "sem configuração" });
+		expect(chamada).not.toHaveBeenCalled();
+		const salvos = await orcamentosSalvos(t);
+		expect(salvos.map(({ fornecedor, origem, endereco }) => [fornecedor, origem, endereco])).toEqual([
+			["Loja A", "exemplo", undefined],
+			["Loja B", "exemplo", undefined],
+			["Loja C", "exemplo", undefined],
+		]);
+		expect(salvos.every(({ valorEmCentavos }) => valorEmCentavos > 0)).toBe(true);
+	});
+
+	it("cai nos preços de exemplo quando o Firecrawl falha", async () => {
+		const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+		firecrawlRespondendo({ error: "fora do ar" }, 500);
+		const t = await escolaComSaldo();
+		const itemId = await itemParaBusca(t);
+		expect(await t.action(api.precos.buscar, { itemId })).toEqual({ origem: "exemplo", encontrados: 3, motivo: "falha" });
+		expect(aviso).toHaveBeenCalledWith(expect.stringContaining("o Firecrawl respondeu 500"));
+		expect((await orcamentosSalvos(t)).every(({ origem }) => origem === "exemplo")).toBe(true);
+	});
+
+	it("cai nos preços de exemplo quando o Firecrawl não acha preço válido", async () => {
+		firecrawlRespondendo({ data: { web: [{ url: "https://loja-d.com.br/roteador", json: { loja: "Loja D", preco: "" } }] } });
+		const t = await escolaComSaldo();
+		const itemId = await itemParaBusca(t);
+		expect(await t.action(api.precos.buscar, { itemId })).toEqual({ origem: "exemplo", encontrados: 3, motivo: "sem preço" });
+		expect(await t.run((ctx) => ctx.db.get(itemId))).toMatchObject({ buscaDePrecoEm: expect.any(Number) });
+	});
+
+	it("completa só até três orçamentos, sem repetir o fornecedor", async () => {
+		vi.stubEnv("FIRECRAWL_API_KEY", "");
+		const t = await escolaComSaldo();
+		const itemId = await itemParaBusca(t);
+		await t.mutation(api.orcamentos.adicionar, { itemId, fornecedor: "Loja A", valorEmCentavos: 51_000 });
+		expect(await t.action(api.precos.buscar, { itemId })).toMatchObject({ origem: "exemplo", encontrados: 2 });
+		expect(await t.action(api.precos.buscar, { itemId })).toMatchObject({ origem: "exemplo", encontrados: 0 });
+		expect((await orcamentosSalvos(t)).map(({ fornecedor, origem }) => [fornecedor, origem])).toEqual([
+			["Loja A", "manual"],
+			["Loja B", "exemplo"],
+			["Loja C", "exemplo"],
+		]);
+	});
+
+	it("não busca preço de despesa que o PDDE não paga", async () => {
+		vi.stubEnv("FIRECRAWL_API_KEY", "");
+		const t = await escolaComSaldo();
+		const itemId = await itemParaBusca(t, "conta de consumo", "Conta de luz de dezembro");
+		await expect(t.action(api.precos.buscar, { itemId })).rejects.toThrow("O PDDE não paga conta de consumo");
+		expect(await orcamentosSalvos(t)).toEqual([]);
 	});
 });
 

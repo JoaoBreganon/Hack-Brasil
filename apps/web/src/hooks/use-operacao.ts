@@ -8,13 +8,13 @@ export function useOperacao<Argumentos extends unknown[], Resultado>(operacao: (
 	const [executando, setExecutando] = useState(false);
 
 	const executar = useCallback(
-		async (...argumentos: Argumentos): Promise<Resultado | null> => {
+		async (...argumentos: Argumentos): Promise<Resultado | undefined> => {
 			setExecutando(true);
 			try {
 				return await operacao(...argumentos);
 			} catch (erro) {
 				toast.error(mensagemDoErro(erro));
-				return null;
+				return undefined;
 			} finally {
 				setExecutando(false);
 			}

@@ -15,7 +15,18 @@ export const LIMITES = {
 	sugestoesPorPedido: 10,
 	buscasDePrecoPorHora: 60,
 	sugestoesComIaPorHora: 30,
+	planilha: 500_000,
 } as const;
+
+export const ACOES_LIMITADAS = ["consulta ao PDDE Info", "contato", "planilha"] as const;
+
+export type AcaoLimitada = (typeof ACOES_LIMITADAS)[number];
+
+export const USOS_POR_HORA: Record<AcaoLimitada, number> = {
+	"consulta ao PDDE Info": 120,
+	contato: 30,
+	planilha: 30,
+};
 
 export type Validacao<T> = { ok: true; valor: T } | { ok: false; erros: Partial<Record<keyof T, string>> };
 

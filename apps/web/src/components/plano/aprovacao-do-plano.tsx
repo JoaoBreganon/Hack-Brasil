@@ -21,7 +21,7 @@ export function AprovacaoDoPlano({ codigoInep, aprovado, podeAprovar }: Propried
 	const [confirmando, setConfirmando] = useState(false);
 
 	async function confirmar() {
-		if ((await aprovar.executar({ codigoInep })) !== null) {
+		if ((await aprovar.executar({ codigoInep })) !== undefined) {
 			toast.success("Plano aprovado. A ata está pronta.");
 		}
 		setConfirmando(false);

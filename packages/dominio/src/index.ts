@@ -10,6 +10,7 @@ export * from "./importacao/csv";
 export * from "./importacao/pdde-info";
 export * from "./importacao/saldos";
 export * from "./orcamento/busca";
+export * from "./orcamento/exemplo";
 export * from "./orcamento/orcamento";
 export * from "./plano/entradas";
 export * from "./plano/plano";

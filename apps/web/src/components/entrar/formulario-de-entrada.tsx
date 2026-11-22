@@ -4,10 +4,11 @@ import { ehCodigoInepValido } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import { useAction } from "convex/react";
 import { ArrowRightIcon } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -21,6 +22,7 @@ export function FormularioDeEntrada() {
 	const consultar = useOperacao(useAction(api.pddeInfo.consultar));
 	const [codigo, setCodigo] = useState("");
 	const [erro, setErro] = useState<string | undefined>();
+	const [semPddeInfo, setSemPddeInfo] = useState<string | null>(null);
 
 	async function enviar(evento: FormEvent<HTMLFormElement>) {
 		evento.preventDefault();
@@ -30,13 +32,16 @@ export function FormularioDeEntrada() {
 			return;
 		}
 		setErro(undefined);
+		setSemPddeInfo(null);
 		const resultado = await consultar.executar({ codigoInep });
-		if (resultado) {
-			if (resultado.aviso) {
-				toast.warning(resultado.aviso);
-			}
-			roteador.push(enderecoDaArea(resultado.codigoInep, ""));
+		if (!resultado) {
+			setSemPddeInfo(codigoInep);
+			return;
 		}
+		if (resultado.aviso) {
+			toast.warning(resultado.aviso);
+		}
+		roteador.push(enderecoDaArea(resultado.codigoInep, ""));
 	}
 
 	return (
@@ -62,6 +67,18 @@ export function FormularioDeEntrada() {
 				{consultar.executando ? "Lendo o PDDE Info…" : "Ver o saldo da escola"}
 				{!consultar.executando && <ArrowRightIcon data-icon="inline-end" />}
 			</Button>
+			{semPddeInfo && (
+				<div role="status" className="flex flex-col gap-3 rounded-lg bg-pilula px-4 py-3.5">
+					<p className="text-pretty">Sem o PDDE Info, dá para carregar o saldo da escola {semPddeInfo} por uma planilha CSV.</p>
+					<Link
+						href={enderecoDaArea(semPddeInfo, "")}
+						className={buttonVariants({ variant: "secondary", className: "self-start" })}
+					>
+						Importar a planilha CSV
+						<ArrowRightIcon data-icon="inline-end" />
+					</Link>
+				</div>
+			)}
 		</form>
 	);
 }

@@ -26,7 +26,7 @@ export function Justificativa({ itemId, atual, bloqueado }: { itemId: Id<"item">
 			return;
 		}
 		setErro(undefined);
-		if ((await justificar.executar({ itemId, justificativa: validacao?.valor.justificativa ?? "" })) !== null) {
+		if ((await justificar.executar({ itemId, justificativa: validacao?.valor.justificativa ?? "" })) !== undefined) {
 			toast.success(validacao ? "Justificativa salva." : "Justificativa removida.");
 		}
 	}

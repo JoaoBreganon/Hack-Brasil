@@ -1,11 +1,15 @@
-import { importarSaldosCsv } from "@aloca/dominio";
+import { ehCodigoInepValido, escolaDaPlanilha, importarSaldosCsv, LIMITES, lerSaldoDaEscolaNaPlanilha } from "@aloca/dominio";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, internalQuery, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { buscarEscola, salvarEscola } from "./escolas";
+import { falhar } from "./lib/falha";
 import { camposDaEscola, fonteDoDado, pendenciaDoPdde, saldoPorCategoria } from "./schema";
+import { registrarUso } from "./usos";
 
 type NovoSaldo = Omit<Doc<"saldo">, "_id" | "_creationTime">;
+
+const TAMANHO_MAXIMO_DO_NOME_DO_ARQUIVO = 80;
 
 function buscarSaldoMaisRecente(ctx: QueryCtx, escolaId: Id<"escola">, exercicio: number) {
 	return ctx.db
@@ -57,6 +61,38 @@ export const registrarColeta = internalMutation({
 	handler: async (ctx, { escola, ...registro }) => {
 		const escolaId = await salvarEscola(ctx, escola);
 		return registrarSaldo(ctx, { escolaId, ...registro });
+	},
+});
+
+export const importarPlanilha = mutation({
+	args: { codigoInep: v.string(), texto: v.string(), nomeDoArquivo: v.string() },
+	handler: async (ctx, { codigoInep, texto, nomeDoArquivo }) => {
+		if (!ehCodigoInepValido(codigoInep)) {
+			falhar("O código INEP tem 8 dígitos, só números.");
+		}
+		if (texto.length > LIMITES.planilha) {
+			falhar("A planilha é grande demais. Deixe só a linha da escola e tente de novo.");
+		}
+		const arquivo = nomeDoArquivo.replace(/\s+/g, " ").trim().slice(0, TAMANHO_MAXIMO_DO_NOME_DO_ARQUIVO) || "sem nome";
+		const leitura = lerSaldoDaEscolaNaPlanilha(texto, codigoInep, { nome: `Planilha ${arquivo}` }, new Date());
+		if (!leitura.ok) {
+			falhar(leitura.mensagem);
+		}
+		const existente = await buscarEscola(ctx, codigoInep);
+		if (existente && (await buscarSaldoAtual(ctx, existente._id))) {
+			falhar("Esta escola já tem saldo no Aloca. Para conferir o valor, use Atualizar saldo no Início.");
+		}
+		await registrarUso(ctx, "planilha");
+		const { registro } = leitura;
+		const escolaId = existente?._id ?? (await salvarEscola(ctx, escolaDaPlanilha(registro)));
+		await registrarSaldo(ctx, {
+			escolaId,
+			exercicio: registro.exercicio,
+			saldo: registro.saldo,
+			fonte: registro.fonte,
+			coletadoEm: registro.coletadoEm.getTime(),
+		});
+		return { exercicio: registro.exercicio, saldo: registro.saldo };
 	},
 });
 
