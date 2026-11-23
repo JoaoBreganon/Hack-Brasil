@@ -5,7 +5,7 @@ import { api } from "@convex/_generated/api";
 import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 export type DadosDoPainel = NonNullable<FunctionReturnType<typeof api.painel.daEscola>>;
 export type ItemDoPainel = DadosDoPainel["itens"][number];
@@ -44,9 +44,23 @@ export function useCodigoInep(): string {
 	return useParams<{ inep: string }>().inep;
 }
 
+function semInscricao() {
+	return () => {};
+}
+
+function useHidratado(): boolean {
+	return useSyncExternalStore(
+		semInscricao,
+		() => true,
+		() => false,
+	);
+}
+
 export function usePainelDaEscola() {
 	const codigoInep = useCodigoInep();
-	const dados = useQuery(api.painel.daEscola, { codigoInep });
+	const hidratado = useHidratado();
+	const consulta = useQuery(api.painel.daEscola, { codigoInep });
+	const dados = hidratado ? consulta : undefined;
 	const derivados = useMemo(() => (dados ? derivar(dados) : null), [dados]);
 	return { codigoInep, carregando: dados === undefined, dados: dados ?? null, derivados };
 }

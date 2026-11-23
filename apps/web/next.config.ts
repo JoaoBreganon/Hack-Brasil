@@ -6,7 +6,7 @@ const RAIZ_DO_REPOSITORIO = path.resolve(process.cwd(), "../..");
 const EM_DESENVOLVIMENTO = process.env.NODE_ENV === "development";
 const INEP_DA_DEMONSTRACAO = "35079923";
 
-loadEnvConfig(RAIZ_DO_REPOSITORIO);
+loadEnvConfig(RAIZ_DO_REPOSITORIO, EM_DESENVOLVIMENTO, undefined, true);
 
 function origensDoConvex(): string {
 	const endereco = process.env.NEXT_PUBLIC_CONVEX_URL;
