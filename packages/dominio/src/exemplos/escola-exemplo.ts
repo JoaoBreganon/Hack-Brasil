@@ -8,6 +8,10 @@ export const ESCOLA_EXEMPLO = {
 	saldo: dividirPeloPercentualPadrao(1_979_915),
 };
 
+export function ehEscolaDeDemonstracao(codigoInep: string): boolean {
+	return codigoInep === ESCOLA_EXEMPLO.codigoInep;
+}
+
 export const NECESSIDADES_EXEMPLO: Necessidade[] = [
 	{
 		id: "livros",

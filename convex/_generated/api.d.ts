@@ -1,6 +1,7 @@
 import type * as alertas from "../alertas.js";
 import type * as contatos from "../contatos.js";
 import type * as crons from "../crons.js";
+import type * as demonstracao from "../demonstracao.js";
 import type * as escolas from "../escolas.js";
 import type * as itens from "../itens.js";
 import type * as lib_falha from "../lib/falha.js";
@@ -22,6 +23,7 @@ declare const fullApi: ApiFromModules<{
 	alertas: typeof alertas;
 	contatos: typeof contatos;
 	crons: typeof crons;
+	demonstracao: typeof demonstracao;
 	escolas: typeof escolas;
 	itens: typeof itens;
 	"lib/falha": typeof lib_falha;

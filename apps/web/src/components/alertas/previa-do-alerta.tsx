@@ -1,6 +1,6 @@
 "use client";
 
-import { type PrazoSimulado, preencherTemplate, TEMPLATE_DO_WHATSAPP, variaveisDoWhatsapp } from "@aloca/dominio";
+import { ehEscolaDeDemonstracao, type PrazoSimulado, preencherTemplate, TEMPLATE_DO_WHATSAPP, variaveisDoWhatsapp } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import { useAction } from "convex/react";
 import { SendIcon } from "lucide-react";
@@ -54,10 +54,12 @@ export function PreviaDoAlerta({ codigoInep, nomeDaEscola, prazo, saldoEmRiscoEm
 				<figcaption className="mb-1 font-semibold">{TEMPLATE_DO_WHATSAPP.cabecalho}</figcaption>
 				<p className="whitespace-pre-line text-pretty">{mensagem}</p>
 			</figure>
-			<Button variant="secondary" onClick={enviarAgora} disabled={enviar.executando} className="self-start">
-				{enviar.executando ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
-				Enviar um teste agora
-			</Button>
+			{!ehEscolaDeDemonstracao(codigoInep) && (
+				<Button variant="secondary" onClick={enviarAgora} disabled={enviar.executando} className="self-start">
+					{enviar.executando ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
+					Enviar um teste agora
+				</Button>
+			)}
 		</section>
 	);
 }

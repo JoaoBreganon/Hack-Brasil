@@ -16,9 +16,11 @@ const COLETA = {
 	pendencias: [{ entidade: "UEx" as const, assunto: "Prestação de Contas", mensagem: "Pendente." }],
 };
 
-async function escolaComSaldo() {
+const INEP_COMUM = "99000010";
+
+async function escolaComSaldo(codigoInep = INEP) {
 	const t = convexTest(schema, MODULOS);
-	await t.mutation(internal.saldos.registrarColeta, COLETA);
+	await t.mutation(internal.saldos.registrarColeta, { ...COLETA, escola: { ...ESCOLA, codigoInep } });
 	return t;
 }
 
@@ -284,14 +286,21 @@ describe("limites das ações abertas", () => {
 	}
 
 	it("barra novos celulares depois do limite da hora, mas deixa trocar só o nome", async () => {
-		const t = await escolaComSaldo();
-		await t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "diretor", nome: "Maria", celular: "(18) 99123-4567" });
+		const t = await escolaComSaldo(INEP_COMUM);
+		await t.mutation(api.contatos.salvar, { codigoInep: INEP_COMUM, papel: "diretor", nome: "Maria", celular: "(18) 99123-4567" });
 		await encherUsos(t, "contato");
-		await t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "diretor", nome: "Maria Souza", celular: "(18) 99123-4567" });
+		await t.mutation(api.contatos.salvar, {
+			codigoInep: INEP_COMUM,
+			papel: "diretor",
+			nome: "Maria Souza",
+			celular: "(18) 99123-4567",
+		});
 		await expect(
-			t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "tesoureiro", nome: "João", celular: "(18) 99123-0000" }),
+			t.mutation(api.contatos.salvar, { codigoInep: INEP_COMUM, papel: "tesoureiro", nome: "João", celular: "(18) 99123-0000" }),
 		).rejects.toThrow("Muitos celulares");
-		expect(await t.query(api.contatos.daEscola, { codigoInep: INEP })).toEqual([expect.objectContaining({ nome: "Maria Souza" })]);
+		expect(await t.query(api.contatos.daEscola, { codigoInep: INEP_COMUM })).toEqual([
+			expect.objectContaining({ nome: "Maria Souza" }),
+		]);
 	});
 
 	it("não consulta o PDDE Info depois do limite da hora", async () => {
@@ -322,9 +331,9 @@ describe("limites das ações abertas", () => {
 
 describe("contatos", () => {
 	it("avisa quando o celular já foi removido", async () => {
-		const t = await escolaComSaldo();
+		const t = await escolaComSaldo(INEP_COMUM);
 		const contatoId = await t.mutation(api.contatos.salvar, {
-			codigoInep: INEP,
+			codigoInep: INEP_COMUM,
 			papel: "diretor",
 			nome: "Maria",
 			celular: "(18) 99123-4567",
@@ -334,25 +343,107 @@ describe("contatos", () => {
 	});
 
 	it("guarda um contato por papel e só devolve o celular mascarado", async () => {
-		const t = await escolaComSaldo();
-		await t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "diretor", nome: "Maria", celular: "(18) 99123-4567" });
-		await t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "diretor", nome: "Maria Souza", celular: "(18) 99123-0000" });
-		const contatos = await t.query(api.contatos.daEscola, { codigoInep: INEP });
+		const t = await escolaComSaldo(INEP_COMUM);
+		await t.mutation(api.contatos.salvar, { codigoInep: INEP_COMUM, papel: "diretor", nome: "Maria", celular: "(18) 99123-4567" });
+		await t.mutation(api.contatos.salvar, {
+			codigoInep: INEP_COMUM,
+			papel: "diretor",
+			nome: "Maria Souza",
+			celular: "(18) 99123-0000",
+		});
+		const contatos = await t.query(api.contatos.daEscola, { codigoInep: INEP_COMUM });
 		expect(contatos).toEqual([expect.objectContaining({ papel: "diretor", nome: "Maria Souza", celular: "(18) •••••-0000" })]);
 	});
 
 	it("recusa telefone fixo", async () => {
-		const t = await escolaComSaldo();
+		const t = await escolaComSaldo(INEP_COMUM);
 		await expect(
-			t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "tesoureiro", nome: "João", celular: "(18) 3521-4567" }),
+			t.mutation(api.contatos.salvar, { codigoInep: INEP_COMUM, papel: "tesoureiro", nome: "João", celular: "(18) 3521-4567" }),
 		).rejects.toThrow("celular com DDD");
 	});
 });
 
 describe("alertas", () => {
 	it("avisa quando a Nvoip não está configurada", async () => {
+		const t = await escolaComSaldo(INEP_COMUM);
+		await expect(t.action(api.alertas.enviarAgora, { codigoInep: INEP_COMUM })).rejects.toThrow("Nvoip");
+	});
+});
+
+describe("escola de demonstração", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("não cadastra celular nem envia alertas", async () => {
 		const t = await escolaComSaldo();
-		await expect(t.action(api.alertas.enviarAgora, { codigoInep: INEP })).rejects.toThrow("Nvoip");
+		await expect(
+			t.mutation(api.contatos.salvar, { codigoInep: INEP, papel: "diretor", nome: "Maria", celular: "(18) 99123-4567" }),
+		).rejects.toThrow("escola de demonstração");
+		await expect(t.action(api.alertas.enviarAgora, { codigoInep: INEP })).rejects.toThrow("escola de demonstração");
+		expect(await t.run((ctx) => ctx.db.query("contato").collect())).toEqual([]);
+	});
+
+	it("deixa de fora da rotina diária os celulares que já estavam na demonstração", async () => {
+		const t = await escolaComSaldo();
+		await t.run(async (ctx) => {
+			const escola = await ctx.db.query("escola").first();
+			if (escola) {
+				await ctx.db.insert("contato", {
+					escolaId: escola._id,
+					papel: "diretor",
+					nome: "Maria",
+					celular: "18991234567",
+					criadoEm: 1,
+				});
+			}
+		});
+		expect(await t.query(internal.alertas.escolasComContato, {})).toEqual([]);
+	});
+
+	it("restaura o plano depois de uma hora sem mudanças", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-11-22T12:00:00Z"));
+		const t = await escolaComSaldo();
+		await t.mutation(api.itens.preencherComExemplo, { codigoInep: INEP });
+		await t.mutation(api.planos.aprovar, { codigoInep: INEP });
+		await t.run(async (ctx) => {
+			const escola = await ctx.db.query("escola").first();
+			if (escola) {
+				await ctx.db.insert("contato", {
+					escolaId: escola._id,
+					papel: "diretor",
+					nome: "Maria",
+					celular: "18991234567",
+					criadoEm: 1,
+				});
+			}
+		});
+
+		vi.setSystemTime(new Date("2026-11-22T12:59:00Z"));
+		expect(await t.mutation(internal.demonstracao.restaurar, {})).toBe(false);
+		expect((await t.query(api.painel.daEscola, { codigoInep: INEP }))?.plano?.status).toBe("aprovado");
+
+		vi.setSystemTime(new Date("2026-11-22T13:01:00Z"));
+		expect(await t.mutation(internal.demonstracao.restaurar, {})).toBe(true);
+		const painel = await t.query(api.painel.daEscola, { codigoInep: INEP });
+		expect(painel?.plano).toBeNull();
+		expect(painel?.itens).toEqual([]);
+		expect(painel?.saldo?.saldo).toEqual(COLETA.saldo);
+		for (const tabela of ["plano", "item", "orcamento", "contato"] as const) {
+			expect(await t.run((ctx) => ctx.db.query(tabela).collect())).toEqual([]);
+		}
+		expect(await t.mutation(internal.demonstracao.restaurar, {})).toBe(false);
+	});
+
+	it("não mexe nas outras escolas", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-11-22T12:00:00Z"));
+		const t = await escolaComSaldo(INEP_COMUM);
+		await t.mutation(api.itens.preencherComExemplo, { codigoInep: INEP_COMUM });
+		vi.setSystemTime(new Date("2026-11-22T15:00:00Z"));
+		expect(await t.mutation(internal.demonstracao.restaurar, {})).toBe(false);
+		expect((await t.query(api.painel.daEscola, { codigoInep: INEP_COMUM }))?.itens.length).toBeGreaterThan(0);
 	});
 });
 

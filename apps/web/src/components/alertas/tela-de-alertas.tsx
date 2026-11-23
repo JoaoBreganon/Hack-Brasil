@@ -1,6 +1,6 @@
 "use client";
 
-import { PAPEIS_DO_CONTATO } from "@aloca/dominio";
+import { ehEscolaDeDemonstracao, PAPEIS_DO_CONTATO } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { CabecalhoDaPagina } from "@/components/escola/cabecalho-da-pagina";
@@ -11,7 +11,8 @@ import { HistoricoDeAlertas } from "./historico-de-alertas";
 import { PreviaDoAlerta } from "./previa-do-alerta";
 
 function Contatos({ codigoInep }: { codigoInep: string }) {
-	const contatos = useQuery(api.contatos.daEscola, { codigoInep });
+	const demonstracao = ehEscolaDeDemonstracao(codigoInep);
+	const contatos = useQuery(api.contatos.daEscola, demonstracao ? "skip" : { codigoInep });
 	return (
 		<section
 			aria-labelledby="titulo-contatos"
@@ -23,7 +24,12 @@ function Contatos({ codigoInep }: { codigoInep: string }) {
 				</h2>
 				<p className="text-sm text-muted-foreground">O número aparece mascarado e só serve para o aviso de prazo.</p>
 			</div>
-			{contatos === undefined ? (
+			{demonstracao ? (
+				<p className="border-t border-regra px-5 py-4 text-muted-foreground">
+					Na escola de demonstração não dá para cadastrar celular nem mandar alertas. Entre com o código INEP da sua escola para
+					usar os avisos.
+				</p>
+			) : contatos === undefined ? (
 				<Skeleton className="mx-5 mb-5 h-20" />
 			) : (
 				<ul>

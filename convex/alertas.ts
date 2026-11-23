@@ -1,6 +1,7 @@
 import {
 	avaliarRisco,
 	type DadosDoAlerta,
+	ehEscolaDeDemonstracao,
 	exercicioEmCurso,
 	type NivelDeRisco,
 	preencherTemplate,
@@ -110,7 +111,7 @@ export const escolasComContato = internalQuery({
 	handler: async (ctx) => {
 		const contatos = await ctx.db.query("contato").collect();
 		const escolas = await Promise.all([...new Set(contatos.map(({ escolaId }) => escolaId))].map((escolaId) => ctx.db.get(escolaId)));
-		return escolas.flatMap((escola) => (escola ? [escola.codigoInep] : []));
+		return escolas.flatMap((escola) => (escola && !ehEscolaDeDemonstracao(escola.codigoInep) ? [escola.codigoInep] : []));
 	},
 });
 
@@ -163,6 +164,9 @@ async function enviarParaContatos(
 export const enviarAgora = action({
 	args: { codigoInep: v.string() },
 	handler: async (ctx, { codigoInep }): Promise<Envio> => {
+		if (ehEscolaDeDemonstracao(codigoInep)) {
+			falhar("A escola de demonstração não envia alertas.");
+		}
 		const configuracao = lerConfiguracaoDaNvoip() ?? falhar("O envio pela Nvoip ainda não está configurado no Convex.");
 		const dados =
 			(await ctx.runQuery(internal.alertas.dadosParaEnvio, { codigoInep })) ??

@@ -1,4 +1,4 @@
-import { mascararCelular, normalizarCelular, validarNomeDoContato } from "@aloca/dominio";
+import { ehEscolaDeDemonstracao, mascararCelular, normalizarCelular, validarNomeDoContato } from "@aloca/dominio";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { buscarEscola } from "./escolas";
@@ -24,6 +24,9 @@ export const daEscola = query({
 export const salvar = mutation({
 	args: { codigoInep: v.string(), papel: papelDoContato, nome: v.string(), celular: v.string() },
 	handler: async (ctx, { codigoInep, papel, ...entrada }) => {
+		if (ehEscolaDeDemonstracao(codigoInep)) {
+			falhar("Na escola de demonstração não dá para cadastrar celular.");
+		}
 		const escola = (await buscarEscola(ctx, codigoInep)) ?? falhar("Busque o saldo da escola antes de cadastrar os contatos.");
 		const nome = validarNomeDoContato(entrada.nome) ?? falhar("Informe o nome com 2 a 80 caracteres.");
 		const celular = normalizarCelular(entrada.celular) ?? falhar("Informe um celular com DDD, por exemplo (18) 99123-4567.");
