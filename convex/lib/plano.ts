@@ -3,6 +3,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { buscarEscola } from "../escolas";
 import { buscarSaldoAtual } from "../saldos";
+import { exigirEdicao } from "./acesso";
 import { falhar } from "./falha";
 
 export type ItemComOrcamentos = Doc<"item"> & { orcamentos: Doc<"orcamento">[] };
@@ -53,6 +54,7 @@ export async function calcularPlano(ctx: QueryCtx, planoId: Id<"plano">, saldo: 
 
 export async function planoEditavel(ctx: MutationCtx, codigoInep: string) {
 	const escola = (await buscarEscola(ctx, codigoInep)) ?? falhar("Busque o saldo da escola antes de montar o plano.");
+	await exigirEdicao(ctx, escola);
 	const plano = await buscarPlano(ctx, escola._id);
 	if (plano) {
 		if (plano.status === "aprovado") {
@@ -73,6 +75,8 @@ export async function planoEditavel(ctx: MutationCtx, codigoInep: string) {
 export async function itemEditavel(ctx: MutationCtx, itemId: Id<"item">) {
 	const item = (await ctx.db.get(itemId)) ?? falhar("Este item não existe mais.");
 	const plano = (await ctx.db.get(item.planoId)) ?? falhar("O plano deste item não existe mais.");
+	const escola = (await ctx.db.get(plano.escolaId)) ?? falhar("A escola deste item não existe mais.");
+	await exigirEdicao(ctx, escola);
 	if (plano.status === "aprovado") {
 		falhar("O plano já foi aprovado. Reabra o plano para fazer mudanças.");
 	}

@@ -32,7 +32,7 @@ A prestação de contas continua no sistema oficial do FNDE. A plataforma cuida 
 * **Resolve, não só avisa:** o governo já mostra o saldo; nós entregamos o plano de compra, os preços e a ata.
 * **Cada sugestão cita a regra** que a permite, com aprovação humana obrigatória.
 * **Feito para o diretor:** linguagem simples e prazo sempre visível.
-* **Sem senha:** a escola entra só com o código INEP. A consulta aberta para pais e conselho é o próximo passo.
+* **Olhar é livre, mudar exige conta:** qualquer pessoa vê o saldo e o plano de uma escola pelo código INEP. Para montar o plano, cadastrar celulares e mandar alertas, a pessoa entra com a conta (WorkOS) e assume a escola, e depois chama o tesoureiro por convite. A escola de demonstração fica aberta para todos.
 
 ## 👥 Para quem
 
@@ -65,16 +65,14 @@ flowchart TD
         B --> C[Dados e regras: Convex + pacote de domínio, motor de risco e prazo do PDDE]
         C --> D[Inteligência: IA com saída estruturada ou regras fixas, sempre pelo validador do PDDE]
         D --> E[Ações: ata e mapa de preços em PDF, alertas por WhatsApp e SMS da Nvoip]
-        E --> F[Interface: área do diretor, entrada pelo código INEP]
+        E --> F[Interface: área do diretor, entrada pelo código INEP e login com WorkOS para mudar os dados]
     end
     subgraph depois [Próximos passos]
-        G[Login: WorkOS]
         H[E-mails: Resend + React Email]
         I[Painel da secretaria]
         J[Consulta aberta e página pública da escola]
         K[Censo Escolar e coleta agendada por rede]
     end
-    F -.-> G
     F -.-> H
     F -.-> I
     F -.-> J
@@ -93,12 +91,13 @@ flowchart TD
 | WhatsApp e SMS | Nvoip (template aprovado pela Meta, SMS como reserva) | No ar |
 | Hospedagem | Vercel (site) e Convex (funções e banco) | No ar |
 | Testes | Vitest, convex-test e Playwright | No ar |
-| Login | WorkOS | Próximo passo |
+| Login | WorkOS AuthKit, com o token validado pelo Convex | No ar |
 | E-mail | Resend + React Email | Próximo passo |
 
 ## 📊 Fontes de dados
 
-* **PDDE Info (FNDE):** saldos, repasses e pendências por escola, na consulta pública por código INEP. O PDDE Info não separa o saldo entre custeio e capital, então a divisão segue a proporção dos repasses do ano. Se o site estiver fora do ar, o diretor clica em **Importar planilha CSV** na tela da escola. A planilha precisa das colunas código INEP, exercício, custeio e capital (nome da escola e município são opcionais) e de uma linha com o código INEP da escola. Ela só entra numa escola que ainda não tem saldo salvo, para não sobrescrever o que veio do PDDE Info.
+* **PDDE Info (FNDE):** saldos, repasses e pendências por escola, na consulta pública por código INEP. O PDDE Info não separa o saldo entre custeio e capital, então a divisão segue a proporção dos repasses do ano. Se o site estiver fora do ar, o diretor clica em **Importar planilha CSV** na tela da escola. A planilha precisa das colunas código INEP, exercício, custeio e capital (nome da escola e município são opcionais) e de uma linha com o código INEP da escola. Ela só entra numa escola que ainda não tem saldo salvo, para não sobrescrever o que veio do PDDE Info, aceita exercícios de 1995 até o ano da importação e não vale para a escola de demonstração. Importar exige conta, e quem importa passa a cuidar da escola no Aloca.
+* **Escola de demonstração (INEP 35079923):** a EMEF Professora Teruyo Kikuta tem um saldo real guardado no `@aloca/dominio` (`ESCOLA_EXEMPLO`), coletado no PDDE Info em 18 de novembro de 2026. Uma rotina de hora em hora (`demonstracao.restaurar`) cadastra a escola com esse saldo quando ela ainda não tem saldo no banco, e apaga o plano e os celulares dela depois de uma hora sem mudanças. Se o PDDE Info estiver fora do ar quando alguém entra com esse código, a consulta mostra o saldo guardado com um aviso, então a demo funciona até num deployment novo. A escola de demonstração não cadastra celular nem envia alertas.
 * **Lojas on-line:** preços para a pesquisa de três orçamentos, pelo Firecrawl. Sem a chave, ou quando a busca falha ou não acha preço, entram até três preços de exemplo do mesmo tipo do item, guardados com origem "exemplo" e avisados ao diretor.
 * **Censo Escolar e Catálogo de Escolas (INEP):** infraestrutura e dados de cada escola. Próximo passo.
 
@@ -109,6 +108,7 @@ Todo número exibido guarda a fonte e o momento da coleta.
 * Usamos apenas **dados institucionais e públicos** das escolas.
 * Nenhum dado pessoal de alunos, diretores ou responsáveis é exibido.
 * Chaves e segredos ficam em variáveis de ambiente, fora do repositório.
+* As ações que custam dinheiro ou incomodam alguém têm limite por hora, contado a cada pedido na tabela `uso` do Convex: consultas ao PDDE Info, celulares cadastrados, planilhas, buscas de preço no Firecrawl, pedidos à IA e alertas enviados na hora. O alerta manual é reservado antes de sair, então pedidos ao mesmo tempo não mandam a mesma mensagem duas vezes.
 
 ## 🚀 Como rodar
 
@@ -131,11 +131,25 @@ NEXT_PUBLIC_SITE_URL=
 CONVEX_DEPLOYMENT=
 NEXT_PUBLIC_CONVEX_URL=
 CONVEX_SITE_URL=
+WORKOS_CLIENT_ID=
+WORKOS_API_KEY=
+WORKOS_COOKIE_PASSWORD=
+NEXT_PUBLIC_WORKOS_REDIRECT_URI=
 ```
 
 `E2E_URL` e `E2E_PORTA`, também no `.env.example`, são opcionais e só valem para os testes de ponta a ponta.
 
-As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Nenhuma é obrigatória para a demo: sem a `FIRECRAWL_API_KEY` a busca de preços usa preços de exemplo, sem a `LLM_API_KEY` a sugestão de itens usa as regras fixas, e sem as chaves da Nvoip o envio de alertas avisa que não está configurado. Login (WorkOS) e e-mail (Resend) ainda não estão no código, então não precisam de chave.
+**Login (WorkOS AuthKit)**
+
+1. No [painel da WorkOS](https://dashboard.workos.com), copie o Client ID e a API key do ambiente. Em **Redirects**, cadastre `http://localhost:3000/conta/retorno` como Redirect URI e `http://localhost:3000/conta/entrar` como Initiate login URI, e ponha `http://localhost:3000/entrar` em **App homepage URL** (para onde o Sair leva, junto com o `returnTo` da rota `/conta/sair`). Troque pelo endereço publicado na Vercel. O ambiente local do projeto já está cadastrado.
+2. Preencha as quatro variáveis `WORKOS_*` acima no `.env.local` (e na Vercel), com `NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3000/conta/retorno` no ambiente local. `WORKOS_COOKIE_PASSWORD` tem pelo menos 32 caracteres: gere com `openssl rand -base64 24`. A `WORKOS_API_KEY` é opcional para só entrar e sair.
+3. Defina o mesmo Client ID no Convex, que valida o token de quem entrou: `npx convex env set WORKOS_CLIENT_ID client_...`. O Convex exige essa variável em todo deployment, porque o `convex/auth.config.ts` a usa. Num deployment sem login, um valor qualquer basta (por exemplo `client_sem_login`): ninguém entra, e só a escola de demonstração aceita mudanças.
+
+Sem `NEXT_PUBLIC_WORKOS_REDIRECT_URI`, o site esconde o botão de entrar e as escolas ficam só para leitura, menos a de demonstração.
+
+**Quem pode mudar uma escola:** quem assume a escola primeiro (ou importa a planilha CSV dela) passa a cuidar dela e chama outras pessoas pela tela **Quem cuida**, com um link de convite que vale por 7 dias e para uma pessoa só. Cada conta cuida de até 20 escolas. Se alguém assumir uma escola por engano, libere pelo painel do Convex com `npx convex run acessos:liberarEscola '{"codigoInep":"..."}'`.
+
+As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Nenhuma é obrigatória para a demo: sem a `FIRECRAWL_API_KEY` a busca de preços usa preços de exemplo, sem a `LLM_API_KEY` a sugestão de itens usa as regras fixas, e sem as chaves da Nvoip o envio de alertas avisa que não está configurado. E-mail (Resend) ainda não está no código, então não precisa de chave.
 
 ```bash
 npx convex env set FIRECRAWL_API_KEY fc-...
@@ -170,7 +184,7 @@ A `LLM_API_KEY` liga a sugestão de itens por IA em Compras. O Convex manda ao m
 
 **Testes de ponta a ponta**
 
-Os testes em `e2e/` percorrem o caminho do diretor no navegador: página inicial, entrada pelo código INEP da escola de demonstração (35079923), saldo e calendário do prazo no Início, compras com o item vedado barrado e a busca de preços, aprovação do plano, ata da APM com o mapa de preços, alertas e o menu no celular.
+Os testes em `e2e/` percorrem o caminho do diretor no navegador: página inicial, entrada pelo código INEP da escola de demonstração (35079923), o pedido de login para importar a planilha de uma escola sem saldo, saldo e calendário do prazo no Início, compras com o item vedado barrado e a busca de preços, aprovação do plano, ata da APM com o mapa de preços, alertas e o menu no celular.
 
 ```bash
 pnpm exec playwright install chromium
@@ -180,7 +194,7 @@ pnpm test:e2e
 
 * **Convex:** os testes precisam de um Convex com as funções atuais. O `pnpm convex:dev` publica as funções no deployment de desenvolvimento e grava `NEXT_PUBLIC_CONVEX_URL` no `.env.local`, que o Playwright lê. Sem essa variável o Playwright para antes de começar e diz o que falta.
 * **Site:** o Playwright sobe o `next dev` na porta 3000, ou usa o que já estiver rodando nela. `E2E_PORTA` troca a porta. `E2E_URL` aponta os testes para um site já publicado, como uma prévia da Vercel, sem subir servidor.
-* **Dados:** cada execução cria no Convex uma escola fictícia com código INEP começando em 99 (nenhum estado usa esse código) e carrega o saldo dela pela planilha CSV, então os testes não dependem do PDDE Info nem de chaves. A escola de demonstração passa só pela consulta ao PDDE Info, como qualquer visita, e o plano dela não é tocado. Se o PDDE Info estiver fora do ar, o teste segue pelo atalho da planilha CSV. Não rode contra a produção, para não deixar escolas fictícias lá.
+* **Dados:** o caminho do diretor roda na escola de demonstração, que é aberta e não pede conta, então os testes não precisam da WorkOS. Cada execução começa pelo botão **Recomeçar a demonstração** e monta o plano dela do zero. Se o PDDE Info estiver fora do ar, a escola entra com o saldo guardado. A escola com código INEP começando em 99 (nenhum estado usa esse código) só serve para conferir que a planilha pede login, e não fica salva. Não rode contra a produção, para não mexer na demonstração que os jurados estão vendo. O login de verdade e as regras de quem pode mudar cada escola são testados no `convex/fluxo.test.ts`.
 * **Chaves:** sem chaves no Convex, os testes passam pelos preços de exemplo e pelas regras fixas. Com a `FIRECRAWL_API_KEY` ou a `LLM_API_KEY` configuradas, os testes aceitam o resultado real, mas demoram mais e gastam créditos. O teste nunca cadastra celular, então nenhum alerta sai.
 * **Falhas:** o relatório fica em `playwright-report/` (`pnpm exec playwright show-report`) e os rastros em `test-results/`.
 
@@ -189,20 +203,26 @@ pnpm test:e2e
 ```
 apps/web/              Next.js: área do diretor
   src/app/             páginas e SEO (robots, sitemap, imagens de compartilhamento)
-    entrar/            entrada pelo código INEP
-    escola/[inep]/     início (saldo e calendário do prazo), compras, plano, ata e alertas
-  src/components/      uma pasta por tela (inicio/, compras/, plano/, ata/, alertas/, entrar/), escola/ com o menu e o que as telas dividem, calendario/, seo/ e ui/ (shadcn)
-  src/hooks/           painel da escola vindo do Convex e operações com aviso de erro
-  src/lib/             próximo passo do diretor e mensagens de erro
+    entrar/            entrada pelo código INEP e as escolas de quem entrou
+    conta/             entrar, retorno e sair da conta (WorkOS AuthKit)
+    convite/[codigo]/  aceitar o convite para cuidar de uma escola
+    escola/[inep]/     início (saldo e calendário do prazo), compras, plano, ata, alertas e quem cuida
+  src/proxy.ts         sessão da WorkOS em cada pedido, desligada quando o login não está configurado
+  src/components/      uma pasta por tela (inicio/, compras/, plano/, ata/, alertas/, pessoas/, entrar/, convite/), conta/ com o botão de entrar e sair, escola/ com o menu, o aviso de acesso e o que as telas dividem, calendario/, seo/ e ui/ (shadcn)
+  src/hooks/           painel da escola vindo do Convex, conta de quem entrou e operações com aviso de erro
+  src/lib/             próximo passo do diretor, caminho de volta depois do login e mensagens de erro
   src/config/          dados do site e áreas do menu
   src/fontes/          Bricolage Grotesque e Geist, servidas localmente
 convex/                banco, funções e rotinas agendadas
-  lib/                 Firecrawl, Nvoip, IA (LLM), requisição com tempo limite e regras do plano
+  lib/                 Firecrawl, Nvoip, IA (LLM), requisição com tempo limite, regras do plano e quem pode mudar cada escola
+  auth.config.ts       tokens da WorkOS que o Convex aceita
+  acessos.ts           assumir a escola, convites, quem cuida e liberar a escola
   pddeInfo.ts          coleta do saldo no PDDE Info
   saldos.ts            saldo coletado e importação por planilha CSV quando o PDDE Info cai
   painel.ts            tudo o que as telas da escola mostram, numa consulta só
   sugestoes.ts         sugestão de itens pela IA ou pelas regras fixas, sempre pelo validador
   precos.ts            busca de preços no Firecrawl, com preços de exemplo de reserva
+  demonstracao.ts      escola de demonstração sempre carregada, com o saldo guardado, e restaurada depois de uma hora parada
   itens.ts, orcamentos.ts, planos.ts, contatos.ts, alertas.ts, crons.ts
 packages/dominio/      regras do PDDE, sem dependências externas e com testes
   src/calendario/      dias úteis, feriados nacionais, Carnaval e os meses do calendário do prazo
@@ -229,7 +249,7 @@ e2e/                   testes de ponta a ponta do diretor (Playwright), configur
 
 ## 📄 Licença
 
-Este projeto **não é open source**. O código é distribuído sob a **Business Source License 1.1**, com permissão adicional para que jurados, mentores e organizadores do Hack Brasil possam **ler, executar e testar** todo o código para fins de avaliação. Uso em produção ou comercial exige autorização escrita do time. Veja o arquivo `LICENSE`.
+Este projeto **não é open source**. O código é distribuído sob a **Business Source License 1.1**, com permissão adicional para que jurados, mentores e organizadores do Hack Brasil possam **ler, executar e testar** todo o código para fins de avaliação. Uso em produção ou comercial exige autorização escrita do time. Em 29 de novembro de 2030 (Change Date), o código passa para a **Apache License 2.0**. Veja o arquivo `LICENSE`.
 
 ## 👩‍💻 Time
 

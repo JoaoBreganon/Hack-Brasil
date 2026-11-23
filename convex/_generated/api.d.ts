@@ -1,9 +1,11 @@
+import type * as acessos from "../acessos.js";
 import type * as alertas from "../alertas.js";
 import type * as contatos from "../contatos.js";
 import type * as crons from "../crons.js";
 import type * as demonstracao from "../demonstracao.js";
 import type * as escolas from "../escolas.js";
 import type * as itens from "../itens.js";
+import type * as lib_acesso from "../lib/acesso.js";
 import type * as lib_falha from "../lib/falha.js";
 import type * as lib_firecrawl from "../lib/firecrawl.js";
 import type * as lib_llm from "../lib/llm.js";
@@ -20,12 +22,14 @@ import type * as sugestoes from "../sugestoes.js";
 import type * as usos from "../usos.js";
 import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 declare const fullApi: ApiFromModules<{
+	acessos: typeof acessos;
 	alertas: typeof alertas;
 	contatos: typeof contatos;
 	crons: typeof crons;
 	demonstracao: typeof demonstracao;
 	escolas: typeof escolas;
 	itens: typeof itens;
+	"lib/acesso": typeof lib_acesso;
 	"lib/falha": typeof lib_falha;
 	"lib/firecrawl": typeof lib_firecrawl;
 	"lib/llm": typeof lib_llm;

@@ -16,10 +16,22 @@ type Propriedades = {
 	codigoInep: string;
 	saldoLivre: Saldo;
 	aoSugerir: (resultado: ResultadoDaSugestao) => void;
+	podeEditar: boolean;
 };
 
-export function ListaVazia({ codigoInep, saldoLivre, aoSugerir }: Propriedades) {
+export function ListaVazia({ codigoInep, saldoLivre, aoSugerir, podeEditar }: Propriedades) {
 	const preencher = useOperacao(useMutation(api.itens.preencherComExemplo));
+
+	if (!podeEditar) {
+		return (
+			<Empty className="rounded-lg border border-border bg-card py-14">
+				<EmptyHeader>
+					<EmptyTitle className="text-lg font-semibold">Nenhum item ainda</EmptyTitle>
+					<EmptyDescription>Quem cuida desta escola no Aloca ainda não montou a lista de compras.</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
+		);
+	}
 
 	return (
 		<Empty className="rounded-lg border border-border bg-card py-14">

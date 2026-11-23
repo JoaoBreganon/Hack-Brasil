@@ -1,8 +1,16 @@
-import { ehCodigoInepValido, escolaDaPlanilha, importarSaldosCsv, LIMITES, lerSaldoDaEscolaNaPlanilha } from "@aloca/dominio";
+import {
+	ehCodigoInepValido,
+	ehEscolaDeDemonstracao,
+	escolaDaPlanilha,
+	importarSaldosCsv,
+	LIMITES,
+	lerSaldoDaEscolaNaPlanilha,
+} from "@aloca/dominio";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { buscarEscola, salvarEscola } from "./escolas";
+import { lerAcesso, tornarMembro, usuarioAtual } from "./lib/acesso";
 import { falhar } from "./lib/falha";
 import { camposDaEscola, fonteDoDado, pendenciaDoPdde, saldoPorCategoria } from "./schema";
 import { registrarUso } from "./usos";
@@ -65,11 +73,15 @@ export const registrarColeta = internalMutation({
 });
 
 export const importarPlanilha = mutation({
-	args: { codigoInep: v.string(), texto: v.string(), nomeDoArquivo: v.string() },
-	handler: async (ctx, { codigoInep, texto, nomeDoArquivo }) => {
+	args: { codigoInep: v.string(), texto: v.string(), nomeDoArquivo: v.string(), nome: v.optional(v.string()) },
+	handler: async (ctx, { codigoInep, texto, nomeDoArquivo, nome = "" }) => {
 		if (!ehCodigoInepValido(codigoInep)) {
 			falhar("O código INEP tem 8 dígitos, só números.");
 		}
+		if (ehEscolaDeDemonstracao(codigoInep)) {
+			falhar("A escola de demonstração já vem com o saldo guardado do PDDE Info. Use Buscar o saldo.");
+		}
+		const usuario = (await usuarioAtual(ctx)) ?? falhar("Entre com sua conta para importar a planilha.");
 		if (texto.length > LIMITES.planilha) {
 			falhar("A planilha é grande demais. Deixe só a linha da escola e tente de novo.");
 		}
@@ -79,12 +91,20 @@ export const importarPlanilha = mutation({
 			falhar(leitura.mensagem);
 		}
 		const existente = await buscarEscola(ctx, codigoInep);
-		if (existente && (await buscarSaldoAtual(ctx, existente._id))) {
-			falhar("Esta escola já tem saldo no Aloca. Para conferir o valor, use Atualizar saldo no Início.");
+		if (existente) {
+			const acesso = await lerAcesso(ctx, existente);
+			if (acesso.temResponsavel && !acesso.membro) {
+				falhar("Só quem cuida desta escola no Aloca pode importar a planilha. Peça um convite a quem já cuida dela.");
+			}
+			if (await buscarSaldoAtual(ctx, existente._id)) {
+				falhar("Esta escola já tem saldo no Aloca. Para conferir o valor, use Atualizar saldo no Início.");
+			}
 		}
 		await registrarUso(ctx, "planilha");
 		const { registro } = leitura;
 		const escolaId = existente?._id ?? (await salvarEscola(ctx, escolaDaPlanilha(registro)));
+		const escola = (await ctx.db.get(escolaId)) ?? falhar("Não foi possível salvar a escola.");
+		await tornarMembro(ctx, escola, usuario, nome);
 		await registrarSaldo(ctx, {
 			escolaId,
 			exercicio: registro.exercicio,

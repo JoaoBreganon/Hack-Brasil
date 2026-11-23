@@ -14,9 +14,10 @@ type Propriedades = {
 	nomeDaEscola: string;
 	prazo: PrazoSimulado;
 	saldoEmRiscoEmCentavos: number;
+	podeEnviar: boolean;
 };
 
-export function PreviaDoAlerta({ codigoInep, nomeDaEscola, prazo, saldoEmRiscoEmCentavos }: Propriedades) {
+export function PreviaDoAlerta({ codigoInep, nomeDaEscola, prazo, saldoEmRiscoEmCentavos, podeEnviar }: Propriedades) {
 	const enviar = useOperacao(useAction(api.alertas.enviarAgora));
 	const { situacao } = prazo;
 
@@ -54,7 +55,7 @@ export function PreviaDoAlerta({ codigoInep, nomeDaEscola, prazo, saldoEmRiscoEm
 				<figcaption className="mb-1 font-semibold">{TEMPLATE_DO_WHATSAPP.cabecalho}</figcaption>
 				<p className="whitespace-pre-line text-pretty">{mensagem}</p>
 			</figure>
-			{!ehEscolaDeDemonstracao(codigoInep) && (
+			{podeEnviar && !ehEscolaDeDemonstracao(codigoInep) && (
 				<Button variant="secondary" onClick={enviarAgora} disabled={enviar.executando} className="self-start">
 					{enviar.executando ? <Spinner data-icon="inline-start" /> : <SendIcon data-icon="inline-start" />}
 					Enviar um teste agora

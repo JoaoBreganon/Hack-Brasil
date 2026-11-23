@@ -16,9 +16,9 @@ import { falhar, mensagemDoErro } from "./lib/falha";
 import { type ConfiguracaoDoLlm, lerConfiguracaoDoLlm, sugerirItensComLlm } from "./lib/llm";
 import { itensComOrcamentos, paraNecessidade, planoEditavel } from "./lib/plano";
 import { buscarSaldoAtual } from "./saldos";
+import { MENSAGEM_DO_LIMITE, tentarUso } from "./usos";
 
 const INTERVALO_ENTRE_SUGESTOES_COM_IA_EM_MS = 60_000;
-const HORA_EM_MS = 60 * 60_000;
 
 type Preparo = {
 	contexto: Omit<ContextoDaSugestao, "pedido">;
@@ -63,16 +63,8 @@ export const preparar = internalMutation({
 		if (plano.sugestaoComIaEm && agora - plano.sugestaoComIaEm < INTERVALO_ENTRE_SUGESTOES_COM_IA_EM_MS) {
 			falhar("A IA acabou de sugerir itens para esta escola. Espere um minuto para pedir de novo.");
 		}
-		const recentes = await ctx.db
-			.query("plano")
-			.withIndex("por_sugestao_com_ia", (q) => q.gt("sugestaoComIaEm", agora - HORA_EM_MS))
-			.take(LIMITES.sugestoesComIaPorHora);
-		if (recentes.length >= LIMITES.sugestoesComIaPorHora) {
-			return {
-				contexto,
-				usarIa: false,
-				aviso: "A IA atingiu o limite de pedidos da última hora. Estas sugestões vieram das regras fixas do PDDE.",
-			};
+		if (!(await tentarUso(ctx, "sugestão com IA"))) {
+			return { contexto, usarIa: false, aviso: MENSAGEM_DO_LIMITE["sugestão com IA"] };
 		}
 		await ctx.db.patch(plano._id, { sugestaoComIaEm: agora });
 		return { contexto, usarIa: true };

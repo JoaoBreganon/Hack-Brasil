@@ -43,7 +43,7 @@ export const pendenciaDoPdde = v.object({
 });
 
 export default defineSchema({
-	escola: defineTable(camposDaEscola).index("por_codigo_inep", ["codigoInep"]),
+	escola: defineTable({ ...camposDaEscola, envioManualEm: v.optional(v.number()) }).index("por_codigo_inep", ["codigoInep"]),
 
 	saldo: defineTable({
 		escolaId: v.id("escola"),
@@ -61,9 +61,7 @@ export default defineSchema({
 		status: umDos(STATUS_DO_PLANO),
 		aprovadoEm: v.optional(v.number()),
 		sugestaoComIaEm: v.optional(v.number()),
-	})
-		.index("por_escola_exercicio", ["escolaId", "exercicio"])
-		.index("por_sugestao_com_ia", ["sugestaoComIaEm"]),
+	}).index("por_escola_exercicio", ["escolaId", "exercicio"]),
 
 	item: defineTable({
 		planoId: v.id("plano"),
@@ -73,9 +71,7 @@ export default defineSchema({
 		prioridade: v.number(),
 		justificativaParaMenosOrcamentos: v.optional(v.string()),
 		buscaDePrecoEm: v.optional(v.number()),
-	})
-		.index("por_plano_prioridade", ["planoId", "prioridade"])
-		.index("por_busca_de_preco", ["buscaDePrecoEm"]),
+	}).index("por_plano_prioridade", ["planoId", "prioridade"]),
 
 	orcamento: defineTable({
 		itemId: v.id("item"),
@@ -103,9 +99,26 @@ export default defineSchema({
 		erro: v.optional(v.string()),
 		criadoEm: v.number(),
 		enviadoEm: v.optional(v.number()),
+	}).index("por_escola_criacao", ["escolaId", "criadoEm"]),
+
+	membro: defineTable({
+		escolaId: v.id("escola"),
+		usuario: v.string(),
+		nome: v.string(),
+		entrouEm: v.number(),
 	})
-		.index("por_escola_criacao", ["escolaId", "criadoEm"])
-		.index("por_envio", ["enviadoEm"]),
+		.index("por_escola_usuario", ["escolaId", "usuario"])
+		.index("por_usuario", ["usuario"]),
+
+	convite: defineTable({
+		escolaId: v.id("escola"),
+		codigo: v.string(),
+		criadoPor: v.string(),
+		criadoEm: v.number(),
+		expiraEm: v.number(),
+	})
+		.index("por_codigo", ["codigo"])
+		.index("por_escola", ["escolaId"]),
 
 	uso: defineTable({
 		acao: acaoLimitada,

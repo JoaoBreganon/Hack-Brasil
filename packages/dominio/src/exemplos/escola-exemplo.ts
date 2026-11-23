@@ -6,6 +6,11 @@ export const ESCOLA_EXEMPLO = {
 	codigoInep: "35079923",
 	municipio: "Adamantina/SP",
 	saldo: dividirPeloPercentualPadrao(1_979_915),
+	exercicioDoSaldo: 2026,
+	saldoColetadoEm: new Date("2026-11-18T00:00:00-03:00"),
+	fonteDoSaldo:
+		"PDDE Info (FNDE), saldo das contas do PDDE coletado em 18 de novembro de 2026 e guardado para a demonstração. Custeio e capital divididos pelo percentual padrão de 80% e 20%.",
+	enderecoDaFonte: "https://www.fnde.gov.br/pddeinfo/pddeinfo/escola/consultar?ano=2026&co_escola=35079923&consultar=Consultar",
 };
 
 export function ehEscolaDeDemonstracao(codigoInep: string): boolean {

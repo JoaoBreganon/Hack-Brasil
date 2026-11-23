@@ -16,18 +16,19 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, type ActionCtx, internalAction, internalMutation, internalQuery, query } from "./_generated/server";
 import { buscarEscola } from "./escolas";
+import { exigirEdicao, lerAcesso } from "./lib/acesso";
 import { falhar, mensagemDoErro } from "./lib/falha";
 import { type ConfiguracaoDaNvoip, enviarAlertaPelaNvoip, lerConfiguracaoDaNvoip } from "./lib/nvoip";
 import { buscarPlano, calcularPlano } from "./lib/plano";
 import { buscarSaldoAtual } from "./saldos";
 import { canalDoAlerta, nivelDeRisco } from "./schema";
+import { registrarUso } from "./usos";
 
 const MINUTO_EM_MS = 60_000;
 const INTERVALO_DO_ENVIO_MANUAL_EM_MS = 10 * MINUTO_EM_MS;
 const INTERVALO_DO_ENVIO_AUTOMATICO_EM_MS = 7 * 24 * 60 * MINUTO_EM_MS;
 const NIVEIS_QUE_ALERTAM: NivelDeRisco[] = ["atenção", "urgente"];
 const ALERTAS_NO_HISTORICO = 10;
-const ENVIOS_MANUAIS_POR_HORA = 30;
 
 type DadosParaEnvio = {
 	escolaId: Id<"escola">;
@@ -43,7 +44,7 @@ export const historico = query({
 	args: { codigoInep: v.string() },
 	handler: async (ctx, { codigoInep }) => {
 		const escola = await buscarEscola(ctx, codigoInep);
-		if (!escola) {
+		if (!escola || !(await lerAcesso(ctx, escola)).membro) {
 			return [];
 		}
 		const alertas = await ctx.db
@@ -95,14 +96,22 @@ export const dadosParaEnvio = internalQuery({
 	},
 });
 
-export const enviadosDesde = internalQuery({
-	args: { desde: v.number() },
-	handler: async (ctx, { desde }) => {
-		const recentes = await ctx.db
+export const reservarEnvioManual = internalMutation({
+	args: { codigoInep: v.string() },
+	handler: async (ctx, { codigoInep }) => {
+		const escola = (await buscarEscola(ctx, codigoInep)) ?? falhar("Busque o saldo da escola antes de enviar alertas.");
+		await exigirEdicao(ctx, escola);
+		const ultimo = await ctx.db
 			.query("alerta")
-			.withIndex("por_envio", (q) => q.gt("enviadoEm", desde))
-			.take(ENVIOS_MANUAIS_POR_HORA);
-		return recentes.length;
+			.withIndex("por_escola_criacao", (q) => q.eq("escolaId", escola._id))
+			.order("desc")
+			.first();
+		const agora = Date.now();
+		if (agora - Math.max(ultimo?.criadoEm ?? 0, escola.envioManualEm ?? 0) < INTERVALO_DO_ENVIO_MANUAL_EM_MS) {
+			falhar("Um alerta acabou de ser enviado. Espere 10 minutos para mandar outro.");
+		}
+		await registrarUso(ctx, "alerta manual");
+		await ctx.db.patch(escola._id, { envioManualEm: agora });
 	},
 });
 
@@ -167,6 +176,7 @@ export const enviarAgora = action({
 		if (ehEscolaDeDemonstracao(codigoInep)) {
 			falhar("A escola de demonstração não envia alertas.");
 		}
+		await ctx.runQuery(internal.acessos.exigirEdicaoDaEscola, { codigoInep });
 		const configuracao = lerConfiguracaoDaNvoip() ?? falhar("O envio pela Nvoip ainda não está configurado no Convex.");
 		const dados =
 			(await ctx.runQuery(internal.alertas.dadosParaEnvio, { codigoInep })) ??
@@ -174,17 +184,11 @@ export const enviarAgora = action({
 		if (dados.contatos.length === 0) {
 			falhar("Cadastre ao menos um celular para receber o alerta.");
 		}
-		if (dados.ultimoAlertaEm && Date.now() - dados.ultimoAlertaEm < INTERVALO_DO_ENVIO_MANUAL_EM_MS) {
-			falhar("Um alerta acabou de ser enviado. Espere 10 minutos para mandar outro.");
-		}
-		const enviadosNaUltimaHora: number = await ctx.runQuery(internal.alertas.enviadosDesde, { desde: Date.now() - 60 * MINUTO_EM_MS });
-		if (enviadosNaUltimaHora >= ENVIOS_MANUAIS_POR_HORA) {
-			falhar("O limite de alertas da última hora foi atingido. Tente de novo mais tarde.");
-		}
 		const { situacao, risco } = simularPrazo(dados.saldoEmRiscoEmCentavos);
 		if (situacao.tipo !== "correndo") {
 			falhar("Não há prazo correndo para avisar.");
 		}
+		await ctx.runMutation(internal.alertas.reservarEnvioManual, { codigoInep });
 		return enviarParaContatos(ctx, configuracao, dados, situacao, risco.nivel);
 	},
 });

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AREAS, AREAS_DA_ESCOLA, enderecoDaArea } from "@/config/navegacao";
 import { SITE } from "@/config/site";
 import { useCodigoInep } from "@/hooks/use-painel-da-escola";
+import { AvisoDeAcesso } from "./aviso-de-acesso";
 import { MarcaDoAloca } from "./marca";
 import { MenuDaEscola } from "./menu-da-escola";
 
@@ -92,7 +93,10 @@ export function CascaDaEscola({ children }: { children: ReactNode }) {
 				</div>
 			)}
 			<main id="conteudo" className="min-w-0 flex-1 px-4 pt-2 pb-14 sm:px-8 md:pt-8 lg:px-12 print:p-0">
-				<div className="mx-auto flex w-full max-w-[1080px] flex-col gap-6">{children}</div>
+				<div className="mx-auto flex w-full max-w-[1080px] flex-col gap-6">
+					<AvisoDeAcesso />
+					{children}
+				</div>
 			</main>
 		</div>
 	);

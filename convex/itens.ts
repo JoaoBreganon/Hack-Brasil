@@ -3,8 +3,12 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, type MutationCtx } from "./_generated/server";
 import { falhar } from "./lib/falha";
+import { exigirEdicao } from "./lib/acesso";
 import { itemEditavel, planoEditavel } from "./lib/plano";
 import { tipoDeDespesa } from "./schema";
+import { tentarUso } from "./usos";
+
+const INTERVALO_ENTRE_BUSCAS_EM_MS = 60_000;
 
 async function itensDoPlano(ctx: MutationCtx, planoId: Id<"plano">) {
 	return ctx.db
@@ -79,9 +83,11 @@ export const paraBusca = internalQuery({
 	handler: async (ctx, { itemId }) => {
 		const item = await ctx.db.get(itemId);
 		const plano = item && (await ctx.db.get(item.planoId));
-		if (!item || !plano) {
+		const escola = plano && (await ctx.db.get(plano.escolaId));
+		if (!item || !plano || !escola) {
 			return null;
 		}
+		await exigirEdicao(ctx, escola);
 		const orcamentos = await ctx.db
 			.query("orcamento")
 			.withIndex("por_item", (q) => q.eq("itemId", itemId))
@@ -96,20 +102,18 @@ export const paraBusca = internalQuery({
 	},
 });
 
-export const buscasDesde = internalQuery({
-	args: { desde: v.number() },
-	handler: async (ctx, { desde }) => {
-		const recentes = await ctx.db
-			.query("item")
-			.withIndex("por_busca_de_preco", (q) => q.gt("buscaDePrecoEm", desde))
-			.take(LIMITES.buscasDePrecoPorHora);
-		return recentes.length;
-	},
-});
-
-export const marcarBusca = internalMutation({
-	args: { itemId: v.id("item"), em: v.number() },
-	handler: async (ctx, { itemId, em }) => {
-		await ctx.db.patch(itemId, { buscaDePrecoEm: em });
+export const reservarBusca = internalMutation({
+	args: { itemId: v.id("item") },
+	handler: async (ctx, { itemId }): Promise<boolean> => {
+		const { item } = await itemEditavel(ctx, itemId);
+		const agora = Date.now();
+		if (item.buscaDePrecoEm && agora - item.buscaDePrecoEm < INTERVALO_ENTRE_BUSCAS_EM_MS) {
+			falhar("Uma busca de preços acabou de rodar para este item. Espere um minuto para buscar de novo.");
+		}
+		if (!(await tentarUso(ctx, "busca de preço"))) {
+			return false;
+		}
+		await ctx.db.patch(itemId, { buscaDePrecoEm: agora });
+		return true;
 	},
 });

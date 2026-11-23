@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { buscarEscola } from "./escolas";
+import { lerAcesso } from "./lib/acesso";
 import { buscarPlano, itensComOrcamentos } from "./lib/plano";
 import { buscarSaldoAtual } from "./saldos";
 
@@ -11,10 +12,15 @@ export const daEscola = query({
 		if (!escola) {
 			return null;
 		}
-		const [saldo, plano] = await Promise.all([buscarSaldoAtual(ctx, escola._id), buscarPlano(ctx, escola._id)]);
+		const [saldo, plano, acesso] = await Promise.all([
+			buscarSaldoAtual(ctx, escola._id),
+			buscarPlano(ctx, escola._id),
+			lerAcesso(ctx, escola),
+		]);
 		const itens = plano ? await itensComOrcamentos(ctx, plano._id) : [];
 		return {
 			escola: { codigoInep: escola.codigoInep, nome: escola.nome, municipio: escola.municipio },
+			acesso,
 			saldo: saldo && {
 				exercicio: saldo.exercicio,
 				saldo: saldo.saldo,

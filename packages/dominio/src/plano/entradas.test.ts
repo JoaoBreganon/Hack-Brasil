@@ -66,8 +66,10 @@ describe("validarPedido", () => {
 });
 
 describe("ehEnderecoWeb", () => {
-	it("aceita só http e https", () => {
+	it("aceita só https", () => {
 		expect(ehEnderecoWeb("https://a.com")).toBe(true);
+		expect(ehEnderecoWeb("http://a.com")).toBe(false);
+		expect(ehEnderecoWeb("HTTP://a.com")).toBe(false);
 		expect(ehEnderecoWeb("ftp://a.com")).toBe(false);
 		expect(ehEnderecoWeb("loja.com")).toBe(false);
 	});

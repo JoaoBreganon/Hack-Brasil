@@ -13,6 +13,8 @@
 		"@aloca/dominio": "workspace:*",
 		"@base-ui/react": "^1.9.0",
 		"@next/env": "16.4.5",
+		"@workos-inc/authkit-nextjs": "4.6.3",
+		"@workos-inc/node": "12.3.0",
 		"class-variance-authority": "^0.7.1",
 		"cn": "^0.5.2",
 		"convex": "^1.50.0",

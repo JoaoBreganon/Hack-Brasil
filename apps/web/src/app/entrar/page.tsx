@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarioDoPrazo, LegendaDoCalendario } from "@/components/calendario/calendario-do-prazo";
 import { FormularioDeEntrada } from "@/components/entrar/formulario-de-entrada";
+import { MinhasEscolas } from "@/components/entrar/minhas-escolas";
 import { ExigeConvex } from "@/components/escola/exige-convex";
 import { MarcaDoAloca } from "@/components/escola/marca";
 import { enderecoDaArea } from "@/config/navegacao";
@@ -33,7 +34,9 @@ export default function PaginaDeEntrada() {
 					<div className="flex w-full max-w-[380px] flex-1 flex-col justify-center gap-6 py-14">
 						<div className="flex flex-col gap-2">
 							<h1 className="font-heading text-[34px] leading-tight font-extrabold tracking-tight">Qual é a sua escola?</h1>
-							<p className="text-muted-foreground">Digite o código INEP. O Aloca busca o saldo no PDDE Info, sem senha.</p>
+							<p className="text-muted-foreground">
+								Digite o código INEP para ver o saldo no PDDE Info. Para montar o plano da escola, entre com sua conta.
+							</p>
 						</div>
 						<FormularioDeEntrada />
 						<Link
@@ -42,6 +45,7 @@ export default function PaginaDeEntrada() {
 						>
 							Abrir a escola de demonstração
 						</Link>
+						<MinhasEscolas />
 					</div>
 				</main>
 				{MES_DO_PRAZO.length > 0 && (

@@ -44,8 +44,10 @@ export function TelaDeCompras() {
 				];
 				const visiveis = filtros.find(({ chave }) => chave === filtro)?.itens ?? ordenados;
 				const itemAberto = dados.itens.find(({ _id }) => _id === selecionado);
-				const novo = selecionado === ITEM_NOVO;
-				const sugerindo = selecionado === SUGERIR_ITENS && !derivados.aprovado;
+				const { podeEditar } = dados.acesso;
+				const travado = derivados.aprovado || !podeEditar;
+				const novo = selecionado === ITEM_NOVO && podeEditar;
+				const sugerindo = selecionado === SUGERIR_ITENS && !travado;
 				const proximaPrioridade = dados.itens.reduce((maior, { prioridade }) => Math.max(maior, prioridade), 0) + 1;
 				const saldoLivre = derivados.plano.saldoRestante;
 				const aoSugerir = (resultado: ResultadoDaSugestao) => {
@@ -58,7 +60,7 @@ export function TelaDeCompras() {
 							titulo="Compras"
 							frase="O que a escola precisa e os orçamentos de cada item."
 							acoes={
-								!derivados.aprovado && (
+								!travado && (
 									<>
 										{dados.itens.length > 0 && (
 											<Link
@@ -85,14 +87,19 @@ export function TelaDeCompras() {
 						{derivados.aprovado && (
 							<p className="rounded-lg bg-pilula px-4 py-3">
 								O plano foi aprovado, então a lista está travada.{" "}
-								<Link href={enderecoDaArea(codigoInep, "plano")} className="font-semibold text-azul-texto hover:underline">
-									Reabrir no plano
-								</Link>
+								{podeEditar && (
+									<Link
+										href={enderecoDaArea(codigoInep, "plano")}
+										className="font-semibold text-azul-texto hover:underline"
+									>
+										Reabrir no plano
+									</Link>
+								)}
 							</p>
 						)}
 						{sugestao && <ResumoDaSugestao resultado={sugestao} aoFechar={() => setSugestao(null)} />}
 						{dados.itens.length === 0 && !novo && !sugerindo ? (
-							<ListaVazia codigoInep={codigoInep} saldoLivre={saldoLivre} aoSugerir={aoSugerir} />
+							<ListaVazia codigoInep={codigoInep} saldoLivre={saldoLivre} aoSugerir={aoSugerir} podeEditar={podeEditar} />
 						) : (
 							<>
 								<div role="group" aria-label="Filtrar itens" className="flex flex-wrap gap-1">
@@ -133,7 +140,7 @@ export function TelaDeCompras() {
 														key={itemAberto._id}
 														codigoInep={codigoInep}
 														item={itemAberto}
-														bloqueado={derivados.aprovado}
+														bloqueado={travado}
 													/>
 												)
 											)}

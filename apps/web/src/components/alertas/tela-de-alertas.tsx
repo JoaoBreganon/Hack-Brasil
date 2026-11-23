@@ -10,9 +10,9 @@ import { ContatoDaEscola } from "./contato-da-escola";
 import { HistoricoDeAlertas } from "./historico-de-alertas";
 import { PreviaDoAlerta } from "./previa-do-alerta";
 
-function Contatos({ codigoInep }: { codigoInep: string }) {
+function Contatos({ codigoInep, membro }: { codigoInep: string; membro: boolean }) {
 	const demonstracao = ehEscolaDeDemonstracao(codigoInep);
-	const contatos = useQuery(api.contatos.daEscola, demonstracao ? "skip" : { codigoInep });
+	const contatos = useQuery(api.contatos.daEscola, demonstracao || !membro ? "skip" : { codigoInep });
 	return (
 		<section
 			aria-labelledby="titulo-contatos"
@@ -28,6 +28,10 @@ function Contatos({ codigoInep }: { codigoInep: string }) {
 				<p className="border-t border-regra px-5 py-4 text-muted-foreground">
 					Na escola de demonstração não dá para cadastrar celular nem mandar alertas. Entre com o código INEP da sua escola para
 					usar os avisos.
+				</p>
+			) : !membro ? (
+				<p className="border-t border-regra px-5 py-4 text-muted-foreground">
+					Só quem cuida desta escola no Aloca vê e cadastra os celulares que recebem o alerta.
 				</p>
 			) : contatos === undefined ? (
 				<Skeleton className="mx-5 mb-5 h-20" />
@@ -61,15 +65,16 @@ export function TelaDeAlertas() {
 							frase="Um WhatsApp quando o prazo apertar. Se não chegar, vai por SMS."
 						/>
 						<div className="flex flex-wrap items-start gap-6">
-							<Contatos codigoInep={codigoInep} />
+							<Contatos codigoInep={codigoInep} membro={dados.acesso.membro} />
 							<div className="flex min-w-0 flex-[1_1_360px] flex-col gap-6">
 								<PreviaDoAlerta
 									codigoInep={codigoInep}
 									nomeDaEscola={dados.escola.nome}
 									prazo={derivados.prazo}
 									saldoEmRiscoEmCentavos={derivados.saldoTotal - noPlanoAprovado}
+									podeEnviar={dados.acesso.membro}
 								/>
-								<HistoricoDeAlertas codigoInep={codigoInep} />
+								{dados.acesso.membro && <HistoricoDeAlertas codigoInep={codigoInep} />}
 							</div>
 						</div>
 					</>

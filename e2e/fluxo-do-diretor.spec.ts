@@ -1,16 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
 
 const INEP_DA_DEMONSTRACAO = "35079923";
-const INEP_DO_TESTE = `99${String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0")}`;
-const NOME_DA_ESCOLA = "EMEF Teste do Aloca";
-const PLANILHA = [
-	"Código INEP;Escola;Município;Exercício;Custeio;Capital",
-	`${INEP_DO_TESTE};${NOME_DA_ESCOLA};Adamantina/SP;2026;15.839,32;3.959,83`,
-].join("\n");
+const INEP_SEM_SALDO = `99${String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0")}`;
+const NOME_DA_ESCOLA = /teruyo kikuta/i;
 const AVISO_DA_BUSCA = /preços? de exemplo, só para ilustrar|preços? novos? achados? em lojas da internet/;
 
-function enderecoDaEscola(caminho = "") {
-	return caminho ? `/escola/${INEP_DO_TESTE}/${caminho}` : `/escola/${INEP_DO_TESTE}`;
+function enderecoDaEscola(caminho = "", codigoInep = INEP_DA_DEMONSTRACAO) {
+	return caminho ? `/escola/${codigoInep}/${caminho}` : `/escola/${codigoInep}`;
 }
 
 function titulo(page: Page, nome: string) {
@@ -45,18 +41,26 @@ test("vai da página inicial ao código INEP da escola de demonstração", async
 	await expect(titulo(page, "Início").or(titulo(page, "Ainda não temos o saldo desta escola"))).toBeVisible();
 });
 
-test("carrega o saldo por planilha CSV e mostra o prazo no Início", async ({ page }) => {
-	await page.goto(enderecoDaEscola());
+test("pede login para importar a planilha de uma escola sem saldo", async ({ page }) => {
+	await page.goto(enderecoDaEscola("", INEP_SEM_SALDO));
 	await expect(titulo(page, "Ainda não temos o saldo desta escola")).toBeVisible();
+	await expect(page.getByText(/entre com sua conta|precisa de login/)).toBeVisible();
+	const importar = page.getByRole("button", { name: "Importar planilha CSV" });
+	await expect(importar.or(page.getByRole("link", { name: "Entrar para importar" }))).toBeVisible();
+	if (await importar.isVisible()) {
+		await expect(importar).toBeDisabled();
+	}
+});
 
-	const seletor = page.waitForEvent("filechooser");
-	await page.getByRole("button", { name: "Importar planilha CSV" }).click();
-	await (await seletor).setFiles({ name: "saldo-pdde.csv", mimeType: "text/csv", buffer: Buffer.from(PLANILHA, "utf8") });
-	await expect(page.getByText(/Saldo de R\$\s?19\.799,15 importado da planilha\./)).toBeVisible();
+test("recomeça a demonstração e mostra o saldo e o prazo no Início", async ({ page }) => {
+	await page.goto(enderecoDaEscola());
+	await expect(titulo(page, "Início")).toBeVisible({ timeout: 90_000 });
+	await expect(page.getByRole("note").filter({ hasText: "Escola de demonstração" })).toBeVisible();
+	await page.getByRole("button", { name: "Recomeçar a demonstração" }).click();
+	await expect(page.getByText("A demonstração voltou ao começo.")).toBeVisible();
 
-	await expect(titulo(page, "Início")).toBeVisible();
 	await expect(page.getByRole("navigation", { name: "Áreas da escola" })).toBeVisible();
-	await expect(page.getByText(NOME_DA_ESCOLA)).toBeVisible();
+	await expect(page.getByText(NOME_DA_ESCOLA).first()).toBeVisible();
 	await expect(page.getByRole("heading", { name: /dias úteis para usar o saldo/ })).toBeVisible();
 	await expect(page.getByRole("table").first()).toBeVisible();
 	await expect(page.getByText("último dia para usar o saldo").first()).toBeAttached();
@@ -123,7 +127,7 @@ test("mostra a ata da APM com o mapa de preços pronta para imprimir", async ({ 
 	await expect(titulo(page, "Ata da APM")).toBeVisible();
 
 	const ata = page.getByRole("article", { name: /Ata de aprovação do plano de compra do PDDE/ });
-	await expect(ata).toContainText(`APM da ${NOME_DA_ESCOLA}`);
+	await expect(ata).toContainText(/APM da .*teruyo kikuta/i);
 	await expect(ata).toContainText("Livros de literatura para a biblioteca");
 	await expect(ata).not.toContainText("Rascunho");
 	await expect(ata.getByRole("heading", { name: "Mapa de preços" })).toBeVisible();
@@ -138,9 +142,11 @@ test("mostra a ata da APM com o mapa de preços pronta para imprimir", async ({ 
 test("mostra quem recebe e a mensagem dos alertas no celular", async ({ page }) => {
 	await page.goto(enderecoDaEscola("alertas"));
 	await expect(titulo(page, "Alertas no celular")).toBeVisible();
-	await expect(page.getByRole("region", { name: "Quem recebe" })).toBeVisible();
+	await expect(page.getByRole("region", { name: "Quem recebe" })).toContainText(
+		"Na escola de demonstração não dá para cadastrar celular",
+	);
 	await expect(page.getByRole("region", { name: "A mensagem" })).toContainText(NOME_DA_ESCOLA);
-	await expect(page.getByRole("button", { name: "Enviar um teste agora" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Enviar um teste agora" })).toHaveCount(0);
 });
 
 test.describe("no celular", () => {

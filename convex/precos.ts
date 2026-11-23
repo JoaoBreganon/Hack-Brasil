@@ -1,13 +1,10 @@
-import { cotacoesDaBusca, LIMITES, type MotivoDoExemplo, REGRAS_POR_TIPO, type ResultadoDaBuscaDePrecos } from "@aloca/dominio";
+import { cotacoesDaBusca, type MotivoDoExemplo, REGRAS_POR_TIPO, type ResultadoDaBuscaDePrecos } from "@aloca/dominio";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, type ActionCtx } from "./_generated/server";
 import { falhar, mensagemDoErro } from "./lib/falha";
 import { buscarPrecosNaWeb } from "./lib/firecrawl";
-
-const INTERVALO_ENTRE_BUSCAS_EM_MS = 60_000;
-const HORA_EM_MS = 60 * 60_000;
 
 async function usarExemplos(ctx: ActionCtx, itemId: Id<"item">, motivo: MotivoDoExemplo): Promise<ResultadoDaBuscaDePrecos> {
 	const encontrados: number = await ctx.runMutation(internal.orcamentos.registrarExemplos, { itemId });
@@ -28,15 +25,10 @@ export const buscar = action({
 		if (!chave) {
 			return usarExemplos(ctx, itemId, "sem configuração");
 		}
-		const agora = Date.now();
-		if (item.buscaDePrecoEm && agora - item.buscaDePrecoEm < INTERVALO_ENTRE_BUSCAS_EM_MS) {
-			falhar("Uma busca de preços acabou de rodar para este item. Espere um minuto para buscar de novo.");
-		}
-		const buscasNaUltimaHora: number = await ctx.runQuery(internal.itens.buscasDesde, { desde: agora - HORA_EM_MS });
-		if (buscasNaUltimaHora >= LIMITES.buscasDePrecoPorHora) {
+		const liberada: boolean = await ctx.runMutation(internal.itens.reservarBusca, { itemId });
+		if (!liberada) {
 			return usarExemplos(ctx, itemId, "limite");
 		}
-		await ctx.runMutation(internal.itens.marcarBusca, { itemId, em: agora });
 		const resultados = await buscarPrecosNaWeb(chave, item.descricao).catch((erro: unknown) => {
 			console.warn(`A busca de preços no Firecrawl falhou: ${mensagemDoErro(erro)}`);
 			return null;

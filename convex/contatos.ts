@@ -2,6 +2,7 @@ import { ehEscolaDeDemonstracao, mascararCelular, normalizarCelular, validarNome
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { buscarEscola } from "./escolas";
+import { exigirEdicao, lerAcesso } from "./lib/acesso";
 import { falhar } from "./lib/falha";
 import { papelDoContato } from "./schema";
 import { registrarUso } from "./usos";
@@ -10,7 +11,7 @@ export const daEscola = query({
 	args: { codigoInep: v.string() },
 	handler: async (ctx, { codigoInep }) => {
 		const escola = await buscarEscola(ctx, codigoInep);
-		if (!escola) {
+		if (!escola || !(await lerAcesso(ctx, escola)).membro) {
 			return [];
 		}
 		const contatos = await ctx.db
@@ -28,6 +29,7 @@ export const salvar = mutation({
 			falhar("Na escola de demonstração não dá para cadastrar celular.");
 		}
 		const escola = (await buscarEscola(ctx, codigoInep)) ?? falhar("Busque o saldo da escola antes de cadastrar os contatos.");
+		await exigirEdicao(ctx, escola);
 		const nome = validarNomeDoContato(entrada.nome) ?? falhar("Informe o nome com 2 a 80 caracteres.");
 		const celular = normalizarCelular(entrada.celular) ?? falhar("Informe um celular com DDD, por exemplo (18) 99123-4567.");
 		const existente = await ctx.db
@@ -48,9 +50,9 @@ export const salvar = mutation({
 export const remover = mutation({
 	args: { contatoId: v.id("contato") },
 	handler: async (ctx, { contatoId }) => {
-		if (!(await ctx.db.get(contatoId))) {
-			falhar("Este celular já foi removido.");
-		}
+		const contato = (await ctx.db.get(contatoId)) ?? falhar("Este celular já foi removido.");
+		const escola = (await ctx.db.get(contato.escolaId)) ?? falhar("A escola deste celular não existe mais.");
+		await exigirEdicao(ctx, escola);
 		await ctx.db.delete(contatoId);
 	},
 });

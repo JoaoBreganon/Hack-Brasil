@@ -19,6 +19,7 @@ const NOMES_DAS_COLUNAS_OPCIONAIS: Record<ColunaOpcional, string[]> = {
 };
 
 const TAMANHO_MAXIMO_DO_NOME = 120;
+const PRIMEIRO_EXERCICIO_DO_PDDE = 1995;
 
 const ROTULOS: Record<Coluna, string> = {
 	codigoInep: "código INEP",
@@ -113,6 +114,7 @@ export function importarSaldosCsv(texto: string, fonte: FonteDoDado, coletadoEm:
 	}
 
 	const opcionais = localizarColunasOpcionais(cabecalho);
+	const ultimoExercicio = coletadoEm.getUTCFullYear();
 	const registros: RegistroDaPlanilha[] = [];
 	const erros: ErroDeImportacao[] = [];
 	const vistos = new Map<string, number>();
@@ -127,8 +129,8 @@ export function importarSaldosCsv(texto: string, fonte: FonteDoDado, coletadoEm:
 		}
 		const textoDoExercicio = valor("exercicio");
 		const exercicio = Number(textoDoExercicio);
-		if (!/^\d{4}$/.test(textoDoExercicio)) {
-			problemas.push(`exercício "${textoDoExercicio}" precisa ser um ano com 4 dígitos`);
+		if (!/^\d{4}$/.test(textoDoExercicio) || exercicio < PRIMEIRO_EXERCICIO_DO_PDDE || exercicio > ultimoExercicio) {
+			problemas.push(`exercício "${textoDoExercicio}" precisa ser um ano entre ${PRIMEIRO_EXERCICIO_DO_PDDE} e ${ultimoExercicio}`);
 		}
 		const saldo = { custeio: 0, capital: 0 };
 		for (const categoria of CATEGORIAS) {

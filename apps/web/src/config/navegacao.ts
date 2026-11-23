@@ -1,4 +1,4 @@
-import { BellRingIcon, ClipboardCheckIcon, FileTextIcon, HouseIcon, type LucideIcon, ShoppingBagIcon } from "lucide-react";
+import { BellRingIcon, ClipboardCheckIcon, FileTextIcon, HouseIcon, type LucideIcon, ShoppingBagIcon, UsersIcon } from "lucide-react";
 
 export const ITEM_NOVO = "novo";
 export const SUGERIR_ITENS = "sugerir";
@@ -16,7 +16,10 @@ export const AREAS: Area[] = [
 	{ caminho: "ata", rotulo: "Ata da APM", icone: FileTextIcon },
 ];
 
-export const AREAS_DA_ESCOLA: Area[] = [{ caminho: "alertas", rotulo: "Alertas no celular", icone: BellRingIcon }];
+export const AREAS_DA_ESCOLA: Area[] = [
+	{ caminho: "alertas", rotulo: "Alertas no celular", icone: BellRingIcon },
+	{ caminho: "pessoas", rotulo: "Quem cuida", icone: UsersIcon },
+];
 
 export function enderecoDaArea(codigoInep: string, caminho: string, busca?: Record<string, string>): string {
 	const base = caminho ? `/escola/${codigoInep}/${caminho}` : `/escola/${codigoInep}`;

@@ -4,6 +4,7 @@ import { ArrowLeftRightIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "cn";
+import { BotaoDaConta } from "@/components/conta/botao-da-conta";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Area, AREAS, AREAS_DA_ESCOLA, enderecoDaArea } from "@/config/navegacao";
 import { usePainelDaEscola } from "@/hooks/use-painel-da-escola";
@@ -68,6 +69,7 @@ export function MenuDaEscola() {
 					</ul>
 				</div>
 			</nav>
+			<BotaoDaConta />
 		</div>
 	);
 }

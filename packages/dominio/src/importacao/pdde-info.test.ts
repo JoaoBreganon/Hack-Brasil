@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { criarData } from "../calendario/calendario";
+import { ESCOLA_EXEMPLO } from "../exemplos/escola-exemplo";
 import {
 	dividirPelosRepasses,
 	enderecoDaConsultaPorEscola,
@@ -115,6 +116,12 @@ describe("enderecoDaConsultaPorEscola", () => {
 			"https://www.fnde.gov.br/pddeinfo/pddeinfo/escola/consultar?ano=2026&co_escola=35079923&consultar=Consultar",
 		);
 		expect(() => enderecoDaConsultaPorEscola("3507992", 2026)).toThrow(RangeError);
+	});
+
+	it("é o mesmo endereço guardado como fonte do saldo da escola de demonstração", () => {
+		expect(ESCOLA_EXEMPLO.enderecoDaFonte).toBe(
+			enderecoDaConsultaPorEscola(ESCOLA_EXEMPLO.codigoInep, ESCOLA_EXEMPLO.exercicioDoSaldo),
+		);
 	});
 });
 

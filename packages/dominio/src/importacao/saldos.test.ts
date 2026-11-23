@@ -61,10 +61,23 @@ describe("importarSaldosCsv", () => {
 			{
 				linha: 3,
 				mensagem:
-					'Linha 3: código INEP "1234" precisa ter 8 dígitos; exercício "27" precisa ser um ano com 4 dígitos; custeio "abc" não é um valor em reais; capital não pode ser negativo.',
+					'Linha 3: código INEP "1234" precisa ter 8 dígitos; exercício "27" precisa ser um ano entre 1995 e 2027; custeio "abc" não é um valor em reais; capital não pode ser negativo.',
 			},
 			{ linha: 4, mensagem: "Linha 4: a escola 00000000 já aparece no exercício 2027 na linha 2." },
-			{ linha: 5, mensagem: 'Linha 5: capital "" não é um valor em reais.' },
+			{
+				linha: 5,
+				mensagem: 'Linha 5: exercício "2028" precisa ser um ano entre 1995 e 2027; capital "" não é um valor em reais.',
+			},
+		]);
+	});
+
+	it("recusa exercício depois do ano da importação ou antes do PDDE", () => {
+		const csv = ["inep;exercicio;custeio;capital", "00000000;9999;1,00;1,00", "00000001;1994;1,00;1,00"].join("\n");
+		const { registros, erros } = importarSaldosCsv(csv, FONTE, COLETADO_EM);
+		expect(registros).toEqual([]);
+		expect(erros.map(({ mensagem }) => mensagem)).toEqual([
+			'Linha 2: exercício "9999" precisa ser um ano entre 1995 e 2027.',
+			'Linha 3: exercício "1994" precisa ser um ano entre 1995 e 2027.',
 		]);
 	});
 

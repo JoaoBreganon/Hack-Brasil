@@ -13,12 +13,20 @@ export const LIMITES = {
 	orcamentosPorItem: 6,
 	itensPorPlano: 60,
 	sugestoesPorPedido: 10,
-	buscasDePrecoPorHora: 60,
-	sugestoesComIaPorHora: 30,
+	escolasPorConta: 20,
+	membrosPorEscola: 10,
+	convitesPorEscola: 10,
 	planilha: 500_000,
 } as const;
 
-export const ACOES_LIMITADAS = ["consulta ao PDDE Info", "contato", "planilha"] as const;
+export const ACOES_LIMITADAS = [
+	"consulta ao PDDE Info",
+	"contato",
+	"planilha",
+	"busca de preço",
+	"sugestão com IA",
+	"alerta manual",
+] as const;
 
 export type AcaoLimitada = (typeof ACOES_LIMITADAS)[number];
 
@@ -26,6 +34,9 @@ export const USOS_POR_HORA: Record<AcaoLimitada, number> = {
 	"consulta ao PDDE Info": 120,
 	contato: 30,
 	planilha: 30,
+	"busca de preço": 60,
+	"sugestão com IA": 30,
+	"alerta manual": 30,
 };
 
 export type Validacao<T> = { ok: true; valor: T } | { ok: false; erros: Partial<Record<keyof T, string>> };
@@ -68,8 +79,8 @@ function resultado<T>(valor: T, erros: Partial<Record<keyof T, string>>): Valida
 
 export function ehEnderecoWeb(texto: string): boolean {
 	try {
-		const { protocol } = new URL(texto);
-		return protocol === "https:" || protocol === "http:";
+		const { protocol, hostname } = new URL(texto);
+		return protocol === "https:" && hostname.length > 0;
 	} catch {
 		return false;
 	}

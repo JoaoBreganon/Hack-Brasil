@@ -1,5 +1,6 @@
 import {
 	ehCodigoInepValido,
+	ehEscolaDeDemonstracao,
 	enderecoDaConsultaPorEscola,
 	lerConsultaPorEscola,
 	registroDeSaldoDoPddeInfo,
@@ -11,6 +12,7 @@ import type { Id } from "./_generated/dataModel";
 import { action, type ActionCtx, internalAction } from "./_generated/server";
 import { falhar, mensagemDoErro } from "./lib/falha";
 import { buscarComTempoLimite } from "./lib/requisicao";
+import { MENSAGEM_DO_LIMITE } from "./usos";
 
 const SUGESTAO_DE_PLANILHA = "Tente de novo mais tarde ou importe o saldo por planilha CSV.";
 const TEMPO_LIMITE_EM_MS = 20_000;
@@ -46,6 +48,18 @@ async function registrar(ctx: ActionCtx, situacao: SituacaoNoPddeInfo) {
 	return { saldoId, escola: situacao.escola, saldo, repasses: situacao.repasses.length, pendencias: situacao.pendencias };
 }
 
+async function saldoDeReserva(ctx: ActionCtx, codigoInep: string, motivo: string): Promise<{ codigoInep: string; aviso: string } | null> {
+	const jaTemSaldo: boolean = await ctx.runQuery(internal.saldos.coletadoDesde, { codigoInep, desde: 0 });
+	if (jaTemSaldo) {
+		return { codigoInep, aviso: `Mostrando o último saldo salvo. ${motivo}` };
+	}
+	if (ehEscolaDeDemonstracao(codigoInep)) {
+		await ctx.runMutation(internal.demonstracao.garantir, {});
+		return { codigoInep, aviso: `Mostrando o saldo guardado da escola de demonstração. ${motivo}` };
+	}
+	return null;
+}
+
 export const coletar = internalAction({
 	args: { codigoInep: v.string(), exercicio: v.number() },
 	handler: async (ctx, { codigoInep, exercicio }) => {
@@ -68,7 +82,11 @@ export const consultar = action({
 		if (coletaRecente) {
 			return { codigoInep };
 		}
-		await ctx.runMutation(internal.usos.registrar, { acao: "consulta ao PDDE Info" });
+		const liberada: boolean = await ctx.runMutation(internal.usos.tentar, { acao: "consulta ao PDDE Info" });
+		if (!liberada) {
+			const limite = MENSAGEM_DO_LIMITE["consulta ao PDDE Info"];
+			return (await saldoDeReserva(ctx, codigoInep, limite)) ?? falhar(limite);
+		}
 		const anoAtual = new Date().getUTCFullYear();
 		try {
 			const situacao = (await lerSituacao(codigoInep, anoAtual)) ?? (await lerSituacao(codigoInep, anoAtual - 1));
@@ -81,11 +99,8 @@ export const consultar = action({
 			if (erro instanceof ConvexError) {
 				throw erro;
 			}
-			const jaTemSaldo: boolean = await ctx.runQuery(internal.saldos.coletadoDesde, { codigoInep, desde: 0 });
-			if (jaTemSaldo) {
-				return { codigoInep, aviso: `Mostrando o último saldo salvo. ${mensagemDoErro(erro)}` };
-			}
-			falhar(`${mensagemDoErro(erro)} ${SUGESTAO_DE_PLANILHA}`);
+			const motivo = mensagemDoErro(erro);
+			return (await saldoDeReserva(ctx, codigoInep, motivo)) ?? falhar(`${motivo} ${SUGESTAO_DE_PLANILHA}`);
 		}
 	},
 });

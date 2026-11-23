@@ -38,7 +38,9 @@ export function TelaDoPlano() {
 								<ArrowRightIcon data-icon="inline-end" />
 							</Link>
 						)}
-						<AprovacaoDoPlano codigoInep={codigoInep} aprovado={aprovado} podeAprovar={plano.itens.length > 0} />
+						{dados.acesso.podeEditar && (
+							<AprovacaoDoPlano codigoInep={codigoInep} aprovado={aprovado} podeAprovar={plano.itens.length > 0} />
+						)}
 					</>
 				);
 				if (dados.itens.length === 0) {
