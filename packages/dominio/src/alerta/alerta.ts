@@ -1,9 +1,11 @@
 import { formatarData, formatarDataNumerica, formatarValor } from "../formato/formatar";
 
-export const CANAIS_DO_ALERTA = ["whatsapp", "sms"] as const;
+export const CANAIS_DO_ALERTA = ["whatsapp", "sms", "email"] as const;
 export const LIMITE_DO_SMS = 160;
 
 export type CanalDoAlerta = (typeof CANAIS_DO_ALERTA)[number];
+
+export const ROTULO_DO_CANAL: Record<CanalDoAlerta, string> = { whatsapp: "WhatsApp", sms: "SMS", email: "E-mail" };
 export const LIMITE_DO_NOME_NO_SMS = 40;
 
 export const TEMPLATE_DO_WHATSAPP = {

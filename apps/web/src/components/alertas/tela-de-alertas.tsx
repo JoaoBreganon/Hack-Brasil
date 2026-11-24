@@ -22,16 +22,16 @@ function Contatos({ codigoInep, membro }: { codigoInep: string; membro: boolean 
 				<h2 id="titulo-contatos" className="font-semibold">
 					Quem recebe
 				</h2>
-				<p className="text-sm text-muted-foreground">O número aparece mascarado e só serve para o aviso de prazo.</p>
+				<p className="text-sm text-muted-foreground">Celular e e-mail aparecem mascarados e só servem para o aviso de prazo.</p>
 			</div>
 			{demonstracao ? (
 				<p className="border-t border-regra px-5 py-4 text-muted-foreground">
-					Na escola de demonstração não dá para cadastrar celular nem mandar alertas. Entre com o código INEP da sua escola para
+					Na escola de demonstração não dá para cadastrar contatos nem mandar alertas. Entre com o código INEP da sua escola para
 					usar os avisos.
 				</p>
 			) : !membro ? (
 				<p className="border-t border-regra px-5 py-4 text-muted-foreground">
-					Só quem cuida desta escola no Aloca vê e cadastra os celulares que recebem o alerta.
+					Só quem cuida desta escola no Aloca vê e cadastra quem recebe o alerta.
 				</p>
 			) : contatos === undefined ? (
 				<Skeleton className="mx-5 mb-5 h-20" />
@@ -61,8 +61,8 @@ export function TelaDeAlertas() {
 				return (
 					<>
 						<CabecalhoDaPagina
-							titulo="Alertas no celular"
-							frase="Um WhatsApp quando o prazo apertar. Se não chegar, vai por SMS."
+							titulo="Alertas de prazo"
+							frase="Um aviso quando o prazo apertar: WhatsApp ou SMS no celular e e-mail."
 						/>
 						<div className="flex flex-wrap items-start gap-6">
 							<Contatos codigoInep={codigoInep} membro={dados.acesso.membro} />

@@ -10,6 +10,8 @@ export const ROTULO_DO_PAPEL: Record<PapelDoContato, string> = {
 const LIMITES_DO_NOME = { minimo: 2, maximo: 80 } as const;
 const CODIGO_DO_PAIS = "55";
 const CELULAR_SEM_PAIS = /^[1-9][1-9]9\d{8}$/;
+const TAMANHO_MAXIMO_DO_EMAIL = 254;
+const FORMATO_DO_EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[a-z]{2,}$/;
 
 export function normalizarCelular(texto: string): string | null {
 	const digitos = texto.replace(/\D/g, "");
@@ -25,4 +27,14 @@ export function mascararCelular(celular: string): string {
 export function validarNomeDoContato(texto: string): string | null {
 	const nome = texto.replace(/\s+/g, " ").trim();
 	return nome.length >= LIMITES_DO_NOME.minimo && nome.length <= LIMITES_DO_NOME.maximo ? nome : null;
+}
+
+export function normalizarEmail(texto: string): string | null {
+	const email = texto.trim().toLowerCase();
+	return email.length <= TAMANHO_MAXIMO_DO_EMAIL && FORMATO_DO_EMAIL.test(email) ? email : null;
+}
+
+export function mascararEmail(email: string): string {
+	const [usuario, dominio] = email.split("@");
+	return `${usuario.slice(0, 1)}•••@${dominio}`;
 }

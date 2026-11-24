@@ -12,6 +12,7 @@ import type * as lib_llm from "../lib/llm.js";
 import type * as lib_nvoip from "../lib/nvoip.js";
 import type * as lib_plano from "../lib/plano.js";
 import type * as lib_requisicao from "../lib/requisicao.js";
+import type * as lib_resend from "../lib/resend.js";
 import type * as orcamentos from "../orcamentos.js";
 import type * as painel from "../painel.js";
 import type * as pddeInfo from "../pddeInfo.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
 	"lib/nvoip": typeof lib_nvoip;
 	"lib/plano": typeof lib_plano;
 	"lib/requisicao": typeof lib_requisicao;
+	"lib/resend": typeof lib_resend;
 	orcamentos: typeof orcamentos;
 	painel: typeof painel;
 	pddeInfo: typeof pddeInfo;

@@ -27,7 +27,9 @@ export function PreviaDoAlerta({ codigoInep, nomeDaEscola, prazo, saldoEmRiscoEm
 			toast[resultado.falhas > 0 ? "warning" : "success"](
 				resultado.falhas > 0
 					? `${resultado.enviados} enviados e ${resultado.falhas} com falha.`
-					: `Alerta enviado para ${resultado.enviados} celular(es).`,
+					: resultado.enviados === 1
+						? "Alerta enviado."
+						: `${resultado.enviados} alertas enviados.`,
 			);
 		}
 	}

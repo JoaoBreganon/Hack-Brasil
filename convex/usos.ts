@@ -8,7 +8,7 @@ const ANTIGOS_APAGADOS_POR_VEZ = 20;
 
 export const MENSAGEM_DO_LIMITE: Record<AcaoLimitada, string> = {
 	"consulta ao PDDE Info": "Muitas consultas ao PDDE Info na última hora. Tente de novo mais tarde ou importe o saldo por planilha CSV.",
-	contato: "Muitos celulares cadastrados na última hora. Tente de novo mais tarde.",
+	contato: "Muitos contatos cadastrados na última hora. Tente de novo mais tarde.",
 	planilha: "Muitas planilhas importadas na última hora. Tente de novo mais tarde.",
 	"busca de preço": "Muitas buscas de preço na última hora. Tente de novo mais tarde.",
 	"sugestão com IA": "A IA atingiu o limite de pedidos da última hora. Estas sugestões vieram das regras fixas do PDDE.",

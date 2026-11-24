@@ -139,11 +139,11 @@ test("mostra a ata da APM com o mapa de preços pronta para imprimir", async ({ 
 	await expect(page.getByRole("navigation", { name: "Áreas da escola" })).toBeHidden();
 });
 
-test("mostra quem recebe e a mensagem dos alertas no celular", async ({ page }) => {
+test("mostra quem recebe e a mensagem dos alertas de prazo", async ({ page }) => {
 	await page.goto(enderecoDaEscola("alertas"));
-	await expect(titulo(page, "Alertas no celular")).toBeVisible();
+	await expect(titulo(page, "Alertas de prazo")).toBeVisible();
 	await expect(page.getByRole("region", { name: "Quem recebe" })).toContainText(
-		"Na escola de demonstração não dá para cadastrar celular",
+		"Na escola de demonstração não dá para cadastrar contatos",
 	);
 	await expect(page.getByRole("region", { name: "A mensagem" })).toContainText(NOME_DA_ESCOLA);
 	await expect(page.getByRole("button", { name: "Enviar um teste agora" })).toHaveCount(0);

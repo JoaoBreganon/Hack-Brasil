@@ -1,6 +1,6 @@
 "use client";
 
-import { normalizarCelular, type PapelDoContato, ROTULO_DO_PAPEL, validarNomeDoContato } from "@aloca/dominio";
+import { normalizarCelular, normalizarEmail, type PapelDoContato, ROTULO_DO_PAPEL, validarNomeDoContato } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -13,29 +13,37 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useOperacao } from "@/hooks/use-operacao";
 
-type Contato = { _id: Id<"contato">; nome: string; celular: string };
+type Contato = { _id: Id<"contato">; nome: string; celular: string | null; email: string | null };
 
-type Erros = { nome?: string; celular?: string };
+type Erros = { nome?: string; celular?: string; email?: string };
+
+function validar(nome: string, celular: string, email: string): Erros {
+	const semCanal = !celular.trim() && !email.trim();
+	return {
+		...(validarNomeDoContato(nome) ? {} : { nome: "Informe o nome." }),
+		...(semCanal ? { celular: "Informe um celular ou um e-mail." } : {}),
+		...(celular.trim() && !normalizarCelular(celular) ? { celular: "Use um celular com DDD, como (18) 99123-4567." } : {}),
+		...(email.trim() && !normalizarEmail(email) ? { email: "Use um e-mail como diretora@escola.com.br." } : {}),
+	};
+}
 
 function FormularioDoContato({ codigoInep, papel, aoTerminar }: { codigoInep: string; papel: PapelDoContato; aoTerminar?: () => void }) {
 	const salvar = useOperacao(useMutation(api.contatos.salvar));
 	const [nome, setNome] = useState("");
 	const [celular, setCelular] = useState("");
+	const [email, setEmail] = useState("");
 	const [erros, setErros] = useState<Erros>({});
 	const prefixo = useId();
 
 	async function enviar(evento: FormEvent<HTMLFormElement>) {
 		evento.preventDefault();
-		const novosErros: Erros = {
-			...(validarNomeDoContato(nome) ? {} : { nome: "Informe o nome." }),
-			...(normalizarCelular(celular) ? {} : { celular: "Use um celular com DDD, como (18) 99123-4567." }),
-		};
+		const novosErros = validar(nome, celular, email);
 		setErros(novosErros);
 		if (Object.keys(novosErros).length > 0) {
 			return;
 		}
-		if (await salvar.executar({ codigoInep, papel, nome, celular })) {
-			toast.success("Celular salvo.");
+		if (await salvar.executar({ codigoInep, papel, nome, celular, email })) {
+			toast.success("Contato salvo.");
 			aoTerminar?.();
 		}
 	}
@@ -69,7 +77,22 @@ function FormularioDoContato({ codigoInep, papel, aoTerminar }: { codigoInep: st
 						/>
 						<FieldError>{erros.celular}</FieldError>
 					</Field>
+					<Field data-invalid={Boolean(erros.email)} className="sm:col-span-2">
+						<FieldLabel htmlFor={`${prefixo}-email`}>E-mail</FieldLabel>
+						<Input
+							id={`${prefixo}-email`}
+							type="email"
+							inputMode="email"
+							value={email}
+							onChange={(evento) => setEmail(evento.target.value)}
+							placeholder="diretora@escola.com.br"
+							autoComplete="email"
+							aria-invalid={Boolean(erros.email)}
+						/>
+						<FieldError>{erros.email}</FieldError>
+					</Field>
 				</div>
+				<p className="text-[13px] text-muted-foreground">Preencha o celular, o e-mail ou os dois.</p>
 				<div className="flex gap-2">
 					<Button type="submit" variant="secondary">
 						{salvar.executando && <Spinner data-icon="inline-start" />}
@@ -97,14 +120,18 @@ export function ContatoDaEscola({ codigoInep, papel, contato }: { codigoInep: st
 				<div className="flex items-center justify-between gap-3">
 					<div className="flex flex-col">
 						<span className="font-semibold">{contato.nome}</span>
-						<span className="text-sm text-muted-foreground tabular-nums">{contato.celular}</span>
+						{[contato.celular, contato.email].filter(Boolean).map((canal) => (
+							<span key={canal} className="text-sm text-muted-foreground tabular-nums">
+								{canal}
+							</span>
+						))}
 					</div>
 					<div className="flex">
 						<Button
 							variant="ghost"
 							size="icon"
 							onClick={() => setEditando(true)}
-							aria-label={`Trocar o celular de ${contato.nome}`}
+							aria-label={`Trocar o contato de ${contato.nome}`}
 						>
 							<PencilIcon />
 						</Button>

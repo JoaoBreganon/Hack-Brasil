@@ -17,7 +17,7 @@ export const AREAS: Area[] = [
 ];
 
 export const AREAS_DA_ESCOLA: Area[] = [
-	{ caminho: "alertas", rotulo: "Alertas no celular", icone: BellRingIcon },
+	{ caminho: "alertas", rotulo: "Alertas de prazo", icone: BellRingIcon },
 	{ caminho: "pessoas", rotulo: "Quem cuida", icone: UsersIcon },
 ];
 

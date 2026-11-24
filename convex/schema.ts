@@ -88,7 +88,8 @@ export default defineSchema({
 		escolaId: v.id("escola"),
 		papel: papelDoContato,
 		nome: v.string(),
-		celular: v.string(),
+		celular: v.optional(v.string()),
+		email: v.optional(v.string()),
 		criadoEm: v.number(),
 	}).index("por_escola_papel", ["escolaId", "papel"]),
 

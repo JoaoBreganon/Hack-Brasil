@@ -364,7 +364,7 @@ describe("limites das ações abertas", () => {
 		});
 		await expect(
 			t.mutation(api.contatos.salvar, { codigoInep: INEP_COMUM, papel: "tesoureiro", nome: "João", celular: "(18) 99123-0000" }),
-		).rejects.toThrow("Muitos celulares");
+		).rejects.toThrow("Muitos contatos");
 		expect(await t.query(api.contatos.daEscola, { codigoInep: INEP_COMUM })).toEqual([
 			expect.objectContaining({ nome: "Maria Souza" }),
 		]);
@@ -468,6 +468,18 @@ describe("contatos", () => {
 		expect(contatos).toEqual([expect.objectContaining({ papel: "diretor", nome: "Maria Souza", celular: "(18) •••••-0000" })]);
 	});
 
+	it("aceita só e-mail, guarda o endereço limpo e pede ao menos um canal", async () => {
+		const t = await escolaComResponsavel();
+		const contato = { codigoInep: INEP_COMUM, papel: "tesoureiro" as const, nome: "João" };
+		await expect(t.mutation(api.contatos.salvar, contato)).rejects.toThrow("celular ou um e-mail");
+		await expect(t.mutation(api.contatos.salvar, { ...contato, email: "joao@escola" })).rejects.toThrow("e-mail válido");
+		await t.mutation(api.contatos.salvar, { ...contato, celular: " ", email: " Joao@Escola.com.br " });
+		expect(await t.query(api.contatos.daEscola, { codigoInep: INEP_COMUM })).toEqual([
+			expect.objectContaining({ papel: "tesoureiro", celular: null, email: "j•••@escola.com.br" }),
+		]);
+		expect((await t.run((ctx) => ctx.db.query("contato").first()))?.email).toBe("joao@escola.com.br");
+	});
+
 	it("recusa telefone fixo", async () => {
 		const t = await escolaComResponsavel();
 		await expect(
@@ -498,6 +510,52 @@ describe("alertas", () => {
 		expect(enviosDeSms(chamada)).toBe(1);
 		await expect(t.action(api.alertas.enviarAgora, { codigoInep: INEP_COMUM })).rejects.toThrow("Espere 10 minutos");
 		expect(enviosDeSms(chamada)).toBe(1);
+	});
+
+	function resendRespondendo(status = 200) {
+		vi.stubEnv("RESEND_API_KEY", "re_teste");
+		vi.stubEnv("RESEND_FROM", "Aloca <alertas@aloca.app>");
+		vi.stubEnv("SITE_URL", "https://aloca.app/");
+		const chamada = vi.fn(async (_endereco: string | URL | Request, _opcoes?: RequestInit) => respostaJson({ id: "email" }, status));
+		vi.stubGlobal("fetch", chamada);
+		return chamada;
+	}
+
+	async function escolaComEmail() {
+		const t = await escolaComResponsavel();
+		await t.mutation(api.contatos.salvar, { codigoInep: INEP_COMUM, papel: "diretor", nome: "Maria", email: "maria@escola.com.br" });
+		return t;
+	}
+
+	it("manda o alerta por e-mail pelo Resend e guarda no histórico", async () => {
+		const chamada = resendRespondendo();
+		const t = await escolaComEmail();
+		expect(await t.action(api.alertas.enviarAgora, { codigoInep: INEP_COMUM })).toEqual({ enviados: 1, falhas: 0 });
+		const [endereco, opcoes] = chamada.mock.calls[0];
+		expect(endereco).toBe("https://api.resend.com/emails");
+		expect(new Headers(opcoes?.headers).get("Authorization")).toBe("Bearer re_teste");
+		const corpo = JSON.parse(String(opcoes?.body));
+		expect(corpo).toMatchObject({ from: "Aloca <alertas@aloca.app>", to: ["maria@escola.com.br"] });
+		expect(corpo.html).toContain(`https://aloca.app/escola/${INEP_COMUM}/plano`);
+		expect(await t.query(api.alertas.historico, { codigoInep: INEP_COMUM })).toEqual([
+			expect.objectContaining({ canal: "email", erro: null, mensagem: corpo.subject }),
+		]);
+	});
+
+	it("guarda a falha do Resend no histórico", async () => {
+		resendRespondendo(422);
+		const t = await escolaComEmail();
+		expect(await t.action(api.alertas.enviarAgora, { codigoInep: INEP_COMUM })).toEqual({ enviados: 0, falhas: 1 });
+		expect(await t.query(api.alertas.historico, { codigoInep: INEP_COMUM })).toEqual([
+			expect.objectContaining({ canal: null, erro: "o Resend respondeu 422" }),
+		]);
+	});
+
+	it("pede um e-mail quando só o Resend está configurado", async () => {
+		const chamada = resendRespondendo();
+		const t = await escolaComCelular();
+		await expect(t.action(api.alertas.enviarAgora, { codigoInep: INEP_COMUM })).rejects.toThrow("Cadastre um e-mail");
+		expect(chamada).not.toHaveBeenCalled();
 	});
 
 	it("conta cada pedido no limite de alertas da hora", async () => {

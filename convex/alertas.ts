@@ -1,8 +1,10 @@
 import {
 	avaliarRisco,
+	type CanalDoAlerta,
 	type DadosDoAlerta,
 	ehEscolaDeDemonstracao,
 	exercicioEmCurso,
+	montarEmailDoAlerta,
 	type NivelDeRisco,
 	preencherTemplate,
 	type SituacaoDoPrazo,
@@ -20,6 +22,7 @@ import { exigirEdicao, lerAcesso } from "./lib/acesso";
 import { falhar, mensagemDoErro } from "./lib/falha";
 import { type ConfiguracaoDaNvoip, enviarAlertaPelaNvoip, lerConfiguracaoDaNvoip } from "./lib/nvoip";
 import { buscarPlano, calcularPlano } from "./lib/plano";
+import { type ConfiguracaoDoResend, enviarEmailPeloResend, lerConfiguracaoDoResend } from "./lib/resend";
 import { buscarSaldoAtual } from "./saldos";
 import { canalDoAlerta, nivelDeRisco } from "./schema";
 import { registrarUso } from "./usos";
@@ -32,13 +35,52 @@ const ALERTAS_NO_HISTORICO = 10;
 
 type DadosParaEnvio = {
 	escolaId: Id<"escola">;
+	codigoInep: string;
 	nomeDaEscola: string;
-	contatos: { celular: string }[];
+	contatos: { celular: string | null; email: string | null }[];
 	ultimoAlertaEm: number | null;
 	saldoEmRiscoEmCentavos: number;
 };
 
 type Envio = { enviados: number; falhas: number };
+
+type EnvioPreparado = { mensagem: string; enviar: () => Promise<CanalDoAlerta> };
+
+type Canais = {
+	nvoip: ConfiguracaoDaNvoip | null;
+	resend: ConfiguracaoDoResend | null;
+};
+
+function lerCanais(): Canais | null {
+	const canais = { nvoip: lerConfiguracaoDaNvoip(), resend: lerConfiguracaoDoResend() };
+	return canais.nvoip || canais.resend ? canais : null;
+}
+
+function enderecoDoPlano(codigoInep: string): string | undefined {
+	const site = process.env.SITE_URL?.replace(/\/+$/, "");
+	return site ? `${site}/escola/${codigoInep}/plano` : undefined;
+}
+
+function prepararEnvios(canais: Canais, dados: DadosParaEnvio, alerta: DadosDoAlerta): EnvioPreparado[] {
+	const { nvoip, resend } = canais;
+	const sms = preencherTemplate(TEMPLATE_DO_SMS, variaveisDoSms(alerta));
+	const email = montarEmailDoAlerta(alerta, enderecoDoPlano(dados.codigoInep));
+	return dados.contatos.flatMap(({ celular, email: endereco }) => [
+		...(nvoip && celular ? [{ mensagem: sms, enviar: () => enviarAlertaPelaNvoip(nvoip, celular, alerta) }] : []),
+		...(resend && endereco
+			? [{ mensagem: email.assunto, enviar: () => enviarEmailPeloResend(resend, endereco, email).then(() => "email" as const) }]
+			: []),
+	]);
+}
+
+function dadosDoAlerta(dados: DadosParaEnvio, situacao: Exclude<SituacaoDoPrazo, { tipo: "sem prazo" }>): DadosDoAlerta {
+	return {
+		nomeDaEscola: dados.nomeDaEscola,
+		diasUteisRestantes: situacao.diasUteisRestantes,
+		saldoEmRiscoEmCentavos: dados.saldoEmRiscoEmCentavos,
+		limiteParaUso: situacao.limiteParaUso,
+	};
+}
 
 export const historico = query({
 	args: { codigoInep: v.string() },
@@ -88,8 +130,9 @@ export const dadosParaEnvio = internalQuery({
 		const totalNoPlano = noPlano ? noPlano.totalPorCategoria.custeio + noPlano.totalPorCategoria.capital : 0;
 		return {
 			escolaId: escola._id,
+			codigoInep: escola.codigoInep,
 			nomeDaEscola: escola.nome,
-			contatos: contatos.map(({ celular }) => ({ celular })),
+			contatos: contatos.map(({ celular, email }) => ({ celular: celular ?? null, email: email ?? null })),
 			ultimoAlertaEm: ultimo?.criadoEm ?? null,
 			saldoEmRiscoEmCentavos: saldoTotal - totalNoPlano,
 		};
@@ -139,29 +182,19 @@ export const registrar = internalMutation({
 	},
 });
 
-async function enviarParaContatos(
+async function enviarAlertas(
 	ctx: ActionCtx,
-	configuracao: ConfiguracaoDaNvoip,
-	dados: DadosParaEnvio,
-	situacao: Exclude<SituacaoDoPrazo, { tipo: "sem prazo" }>,
-	nivel: NivelDeRisco,
+	envios: EnvioPreparado[],
+	base: { escolaId: Id<"escola">; exercicio: number; nivel: NivelDeRisco },
 ): Promise<Envio> {
-	const alerta: DadosDoAlerta = {
-		nomeDaEscola: dados.nomeDaEscola,
-		diasUteisRestantes: situacao.diasUteisRestantes,
-		saldoEmRiscoEmCentavos: dados.saldoEmRiscoEmCentavos,
-		limiteParaUso: situacao.limiteParaUso,
-	};
-	const mensagem = preencherTemplate(TEMPLATE_DO_SMS, variaveisDoSms(alerta));
 	const resultados = await Promise.all(
-		dados.contatos.map(async ({ celular }) => {
-			const base = { escolaId: dados.escolaId, exercicio: situacao.exercicio, nivel, mensagem };
+		envios.map(async ({ mensagem, enviar }) => {
 			try {
-				const canal = await enviarAlertaPelaNvoip(configuracao, celular, alerta);
-				await ctx.runMutation(internal.alertas.registrar, { ...base, canal });
+				const canal = await enviar();
+				await ctx.runMutation(internal.alertas.registrar, { ...base, mensagem, canal });
 				return true;
 			} catch (erro) {
-				await ctx.runMutation(internal.alertas.registrar, { ...base, erro: mensagemDoErro(erro) });
+				await ctx.runMutation(internal.alertas.registrar, { ...base, mensagem, erro: mensagemDoErro(erro) });
 				return false;
 			}
 		}),
@@ -177,27 +210,31 @@ export const enviarAgora = action({
 			falhar("A escola de demonstração não envia alertas.");
 		}
 		await ctx.runQuery(internal.acessos.exigirEdicaoDaEscola, { codigoInep });
-		const configuracao = lerConfiguracaoDaNvoip() ?? falhar("O envio pela Nvoip ainda não está configurado no Convex.");
+		const canais = lerCanais() ?? falhar("O envio de alertas ainda não está configurado no Convex (Nvoip ou Resend).");
 		const dados =
 			(await ctx.runQuery(internal.alertas.dadosParaEnvio, { codigoInep })) ??
 			falhar("Busque o saldo da escola antes de enviar alertas.");
 		if (dados.contatos.length === 0) {
-			falhar("Cadastre ao menos um celular para receber o alerta.");
+			falhar("Cadastre ao menos um celular ou e-mail para receber o alerta.");
 		}
 		const { situacao, risco } = simularPrazo(dados.saldoEmRiscoEmCentavos);
 		if (situacao.tipo !== "correndo") {
 			falhar("Não há prazo correndo para avisar.");
 		}
+		const envios = prepararEnvios(canais, dados, dadosDoAlerta(dados, situacao));
+		if (envios.length === 0) {
+			falhar(canais.nvoip ? "Cadastre um celular para receber o alerta." : "Cadastre um e-mail para receber o alerta.");
+		}
 		await ctx.runMutation(internal.alertas.reservarEnvioManual, { codigoInep });
-		return enviarParaContatos(ctx, configuracao, dados, situacao, risco.nivel);
+		return enviarAlertas(ctx, envios, { escolaId: dados.escolaId, exercicio: situacao.exercicio, nivel: risco.nivel });
 	},
 });
 
 export const enviarDoDia = internalAction({
 	args: {},
 	handler: async (ctx): Promise<Envio> => {
-		const configuracao = lerConfiguracaoDaNvoip();
-		if (!configuracao) {
+		const canais = lerCanais();
+		if (!canais) {
 			return { enviados: 0, falhas: 0 };
 		}
 		const hoje = new Date();
@@ -213,7 +250,8 @@ export const enviarDoDia = internalAction({
 			}
 			const { nivel } = avaliarRisco(dados.saldoEmRiscoEmCentavos, situacao);
 			if (NIVEIS_QUE_ALERTAM.includes(nivel)) {
-				const envio = await enviarParaContatos(ctx, configuracao, dados, situacao, nivel);
+				const envios = prepararEnvios(canais, dados, dadosDoAlerta(dados, situacao));
+				const envio = await enviarAlertas(ctx, envios, { escolaId: dados.escolaId, exercicio: situacao.exercicio, nivel });
 				total.enviados += envio.enviados;
 				total.falhas += envio.falhas;
 			}

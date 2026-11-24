@@ -1,5 +1,6 @@
 "use client";
 
+import { ROTULO_DO_CANAL } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 
@@ -23,7 +24,7 @@ export function HistoricoDeAlertas({ codigoInep }: { codigoInep: string }) {
 					>
 						<span className="tabular-nums">{DATA_E_HORA.format(alerta.criadoEm)}</span>
 						{alerta.canal ? (
-							<span className="text-muted-foreground">{alerta.canal === "whatsapp" ? "WhatsApp" : "SMS"}</span>
+							<span className="text-muted-foreground">{ROTULO_DO_CANAL[alerta.canal]}</span>
 						) : (
 							<span className="text-perigo">Falhou: {alerta.erro}</span>
 						)}

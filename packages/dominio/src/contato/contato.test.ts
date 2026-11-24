@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mascararCelular, normalizarCelular, validarNomeDoContato } from "./contato";
+import { mascararCelular, mascararEmail, normalizarCelular, normalizarEmail, validarNomeDoContato } from "./contato";
 
 describe("normalizarCelular", () => {
 	it("aceita celular com DDD, com ou sem código do país e máscara", () => {
@@ -24,5 +24,24 @@ describe("validarNomeDoContato", () => {
 	it("limpa espaços e recusa nome curto", () => {
 		expect(validarNomeDoContato("  Maria   Souza ")).toBe("Maria Souza");
 		expect(validarNomeDoContato("M")).toBeNull();
+	});
+});
+
+describe("normalizarEmail", () => {
+	it("limpa espaços e põe em minúsculas", () => {
+		expect(normalizarEmail("  Maria.Souza@Escola.SP.gov.br ")).toBe("maria.souza@escola.sp.gov.br");
+	});
+
+	it("recusa endereço sem domínio, com espaço ou com caracteres de HTML", () => {
+		expect(normalizarEmail("maria@escola")).toBeNull();
+		expect(normalizarEmail("maria souza@escola.com")).toBeNull();
+		expect(normalizarEmail("<maria>@escola.com")).toBeNull();
+		expect(normalizarEmail(`${"a".repeat(250)}@escola.com`)).toBeNull();
+	});
+});
+
+describe("mascararEmail", () => {
+	it("mostra só a primeira letra e o domínio", () => {
+		expect(mascararEmail("maria@escola.com")).toBe("m•••@escola.com");
 	});
 });

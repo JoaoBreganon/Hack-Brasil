@@ -1,4 +1,5 @@
 export * from "./alerta/alerta";
+export * from "./alerta/email";
 export * from "./ata/ata";
 export * from "./calendario/calendario";
 export * from "./calendario/meses";
