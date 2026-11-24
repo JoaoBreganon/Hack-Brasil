@@ -62,7 +62,7 @@ export function TelaDeAlertas() {
 					<>
 						<CabecalhoDaPagina
 							titulo="Alertas de prazo"
-							frase="Um aviso quando o prazo apertar: WhatsApp ou SMS no celular e e-mail."
+							frase="Um aviso quando o prazo apertar, por WhatsApp, SMS ou e-mail."
 						/>
 						<div className="flex flex-wrap items-start gap-6">
 							<Contatos codigoInep={codigoInep} membro={dados.acesso.membro} />

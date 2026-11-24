@@ -21,9 +21,9 @@ Um ciclo só: **detectar → decidir → executar → mostrar**.
 | Detectar | Saldo, repasses e pendências de cada escola, lidos no PDDE Info (ou importados por planilha CSV quando o site está fora do ar) |
 | Decidir | Risco de estorno com contagem de dias úteis e plano de compra sugerido por IA, cruzando saldo, o que a escola precisa e regras do programa |
 | Executar | Pesquisa de 3 preços por item, ata da Unidade Executora e mapa de preços em PDF |
-| Mostrar | Próximo passo: página pública da escola com o que recebeu, o que planejou e o que ainda está parado |
+| Mostrar | Página pública da escola com o plano aprovado, planilha do plano e painel da rede para a secretaria |
 
-O plano de compra é a entrega principal, com um contador de dias até o prazo no topo. Alertas por WhatsApp, com SMS de reserva, avisam diretor e tesoureiro quando o prazo se aproxima. Alertas por e-mail e o resumo semanal da rede para a secretaria estão no roteiro depois do hackathon.
+O plano de compra é a entrega principal, com um contador de dias até o prazo no topo. Alertas por WhatsApp (com SMS de reserva) e por e-mail avisam diretor e tesoureiro quando o prazo se aproxima. A secretaria acompanha todas as escolas da rede num painel só, e pais e comunidade veem o plano aprovado na página pública da escola.
 
 A prestação de contas continua no sistema oficial do FNDE. A plataforma cuida do que vem antes dela.
 
@@ -32,15 +32,15 @@ A prestação de contas continua no sistema oficial do FNDE. A plataforma cuida 
 * **Resolve, não só avisa:** o governo já mostra o saldo; nós entregamos o plano de compra, os preços e a ata.
 * **Cada sugestão cita a regra** que a permite, com aprovação humana obrigatória.
 * **Feito para o diretor:** linguagem simples e prazo sempre visível.
-* **Olhar é livre, mudar exige conta:** qualquer pessoa vê o saldo e o plano de uma escola pelo código INEP. Para montar o plano, cadastrar celulares e mandar alertas, a pessoa entra com a conta (WorkOS) e assume a escola, e depois chama o tesoureiro por convite. A escola de demonstração fica aberta para todos.
+* **Olhar é livre, mudar exige conta:** qualquer pessoa vê o saldo e o plano de uma escola pelo código INEP. Para montar o plano, cadastrar contatos e mandar alertas, a pessoa entra com a conta (WorkOS) e assume a escola, e depois chama o tesoureiro por convite. A escola de demonstração fica aberta para todos.
 
 ## 👥 Para quem
 
 | Perfil | Uso |
 |---|---|
 | Diretor e Unidade Executora (APM, caixa escolar) | Alerta de prazo, plano de compra, preços e ata |
-| Secretaria de educação | Próximo passo: painel da rede com escolas em risco e pendências |
-| Pais e conselho escolar | Próximo passo: página pública com o que a escola recebeu e gastou |
+| Secretaria de educação | Painel da rede com o saldo, o risco de estorno, as pendências e os planos aprovados de cada escola |
+| Pais e conselho escolar | Página pública com o plano aprovado: itens, fornecedores e valores |
 
 Quem contrata é a **secretaria de educação**, com assinatura por escola. É ela que analisa as contas das escolas da rede, e pendência na prestação de contas suspende o repasse. Escolas e famílias não pagam.
 
@@ -51,8 +51,9 @@ Quem contrata é a **secretaria de educação**, com assinatura por escola. É e
 3. O motor de regras calcula o risco de estorno, os dias úteis até o prazo e as pendências.
 4. A IA sugere os itens do plano de compra (sem chave de IA, regras fixas fazem isso) e um validador barra o que o PDDE não paga antes de salvar.
 5. O Firecrawl busca três preços por item nas lojas. Sem a chave, ou quando a busca falha ou não acha preço, entram preços de exemplo, marcados como exemplo para o diretor trocar pelos orçamentos reais.
-6. Com o plano aprovado, a ata da APM e o mapa de preços saem prontos para imprimir ou salvar em PDF.
-7. Uma rotina diária manda o alerta de prazo por WhatsApp ou SMS (Nvoip), e a área do diretor atualiza em tempo real.
+6. Com o plano aprovado, a ata da APM e o mapa de preços saem prontos para imprimir ou salvar em PDF, e o plano sai em planilha CSV.
+7. Uma rotina diária manda o alerta de prazo por WhatsApp ou SMS (Nvoip) e por e-mail (Resend), e a área do diretor atualiza em tempo real.
+8. A escola pode publicar o plano aprovado numa página aberta, e a secretaria acompanha as escolas da rede no painel.
 
 ## 🏗️ Arquitetura
 
@@ -64,19 +65,16 @@ flowchart TD
         A[Fontes: PDDE Info, planilha CSV de reserva, lojas on-line] --> B[Coleta: ações do Convex + Firecrawl, com preços de exemplo de reserva]
         B --> C[Dados e regras: Convex + pacote de domínio, motor de risco e prazo do PDDE]
         C --> D[Inteligência: IA com saída estruturada ou regras fixas, sempre pelo validador do PDDE]
-        D --> E[Ações: ata e mapa de preços em PDF, alertas por WhatsApp e SMS da Nvoip]
+        D --> E[Ações: ata e mapa de preços em PDF, planilha CSV, alertas por WhatsApp e SMS da Nvoip e e-mail do Resend]
         E --> F[Interface: área do diretor, entrada pelo código INEP e login com WorkOS para mudar os dados]
+        F --> G[Página pública da escola e painel da rede para a secretaria]
     end
     subgraph depois [Próximos passos]
-        H[E-mails: Resend + React Email]
-        I[Painel da secretaria]
-        J[Consulta aberta e página pública da escola]
         K[Censo Escolar e coleta agendada por rede]
+        L[Resumo semanal da rede por e-mail]
     end
-    F -.-> H
-    F -.-> I
-    F -.-> J
     C -.-> K
+    G -.-> L
 ```
 
 ## 🧰 Tecnologias
@@ -87,12 +85,12 @@ flowchart TD
 | Backend e banco | Convex (dados em tempo real, ações e rotina diária de alertas) | No ar |
 | Coleta de dados | Consulta pública do PDDE Info (ação Convex), planilha CSV de reserva e Firecrawl (lojas) | No ar |
 | IA | LLM compatível com a API da OpenAI, com saída estruturada, regras fixas de reserva e validador | No ar |
-| Documentos | Ata e mapa de preços em página de impressão, salvos em PDF pelo navegador | No ar |
+| Documentos | Ata e mapa de preços em página de impressão, salvos em PDF pelo navegador, e plano em planilha CSV | No ar |
 | WhatsApp e SMS | Nvoip (template aprovado pela Meta, SMS como reserva) | No ar |
 | Hospedagem | Vercel (site) e Convex (funções e banco) | No ar |
 | Testes | Vitest, convex-test e Playwright | No ar |
 | Login | WorkOS AuthKit, com o token validado pelo Convex | No ar |
-| E-mail | Resend + React Email | Próximo passo |
+| E-mail | Resend (API HTTP), com texto e HTML montados no `@aloca/dominio` | Pronto, liga com a chave |
 
 ## 📊 Fontes de dados
 
@@ -108,7 +106,7 @@ Todo número exibido guarda a fonte e o momento da coleta.
 * Usamos apenas **dados institucionais e públicos** das escolas.
 * Nenhum dado pessoal de alunos, diretores ou responsáveis é exibido.
 * Chaves e segredos ficam em variáveis de ambiente, fora do repositório.
-* As ações que custam dinheiro ou incomodam alguém têm limite por hora, contado a cada pedido na tabela `uso` do Convex: consultas ao PDDE Info, celulares cadastrados, planilhas, buscas de preço no Firecrawl, pedidos à IA e alertas enviados na hora. O alerta manual é reservado antes de sair, então pedidos ao mesmo tempo não mandam a mesma mensagem duas vezes.
+* As ações que custam dinheiro ou incomodam alguém têm limite por hora, contado a cada pedido na tabela `uso` do Convex: consultas ao PDDE Info, contatos cadastrados, planilhas, buscas de preço no Firecrawl, pedidos à IA e alertas enviados na hora. O alerta manual é reservado antes de sair, então pedidos ao mesmo tempo não mandam a mesma mensagem duas vezes.
 
 ## 🚀 Como rodar
 
@@ -149,7 +147,13 @@ Sem `NEXT_PUBLIC_WORKOS_REDIRECT_URI`, o site esconde o botão de entrar e as es
 
 **Quem pode mudar uma escola:** quem assume a escola primeiro (ou importa a planilha CSV dela) passa a cuidar dela e chama outras pessoas pela tela **Quem cuida**, com um link de convite que vale por 7 dias e para uma pessoa só. Só a pessoa mais antiga da escola tira outras pessoas; as demais só podem sair. Cada conta cuida de até 20 escolas. Se alguém assumir uma escola por engano, libere pelo painel do Convex com `npx convex run acessos:liberarEscola '{"codigoInep":"..."}'`.
 
-As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Nenhuma é obrigatória para a demo: sem a `FIRECRAWL_API_KEY` a busca de preços usa preços de exemplo, sem a `LLM_API_KEY` a sugestão de itens usa as regras fixas, e sem as chaves da Nvoip o envio de alertas avisa que não está configurado. E-mail (Resend) ainda não está no código, então não precisa de chave.
+**Página pública, planilha e painel da rede**
+
+* **Planilha do plano:** o botão **Baixar planilha** no Plano gera um CSV que o Excel abre em português, com cada item, a situação, o fornecedor escolhido, os três orçamentos e os totais.
+* **Página pública:** quem cuida da escola publica, no Plano, a página `/transparencia/[inep]`. Ela mostra só o plano aprovado, sem conta, entra no sitemap e sai do ar quando a escola tira a publicação ou é liberada. A da escola de demonstração fica sempre no ar.
+* **Painel da rede:** em `/rede`, quem é da secretaria entra com a conta, cria a rede e cola os códigos INEP das escolas. Só quem está na rede vê o painel, e colegas entram por link de convite. Cada conta participa de uma rede; cada rede acompanha até 100 escolas e 20 pessoas.
+
+As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Nenhuma é obrigatória para a demo: sem a `FIRECRAWL_API_KEY` a busca de preços usa preços de exemplo, sem a `LLM_API_KEY` a sugestão de itens usa as regras fixas, e sem as chaves da Nvoip e do Resend o envio de alertas avisa que não está configurado. Cada canal funciona sozinho: com só o Resend, o alerta vai só por e-mail.
 
 ```bash
 npx convex env set FIRECRAWL_API_KEY fc-...
@@ -162,9 +166,12 @@ npx convex env set NVOIP_WHATSAPP_TEMPLATE ...
 npx convex env set LLM_API_KEY sk-...
 npx convex env set LLM_MODEL gpt-4o-mini
 npx convex env set LLM_BASE_URL https://api.openai.com/v1
+npx convex env set RESEND_API_KEY re_...
+npx convex env set RESEND_FROM "Aloca <alertas@seu-dominio.com.br>"
+npx convex env set SITE_URL https://endereco-do-site
 ```
 
-Sem a instância e o template do WhatsApp, o alerta vai só por SMS.
+Sem a instância e o template do WhatsApp, o alerta vai só por SMS. O `RESEND_FROM` precisa usar um domínio verificado no Resend. O `SITE_URL` é opcional e põe no e-mail o botão que abre o plano da escola.
 
 A `LLM_API_KEY` liga a sugestão de itens por IA em Compras. O Convex manda ao modelo o saldo livre de custeio e de capital, os tipos de despesa que o PDDE paga e não paga e o que o diretor escreveu, e pede a resposta em JSON com esquema fixo (saída estruturada). A chamada segue a API de chat da OpenAI, então `LLM_MODEL` e `LLM_BASE_URL` (opcionais, com padrão `gpt-4o-mini` e `https://api.openai.com/v1`) permitem usar outro provedor compatível. Sem a chave, ou quando a IA falha ou passa de 30 pedidos na hora, as sugestões saem das regras fixas do PDDE. Nos dois casos o validador do `@aloca/dominio` barra conta de consumo, pessoal, servidor público, aluguel, tarifa bancária, tributo e o resto do que o PDDE não paga antes de salvar ou mostrar qualquer item.
 

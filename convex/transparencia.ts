@@ -35,7 +35,6 @@ export const daEscola = query({
 								categoria: validacao.categoria,
 								quantidade: necessidade.quantidade,
 								fornecedor: validacao.escolha?.vencedora.fornecedor ?? "",
-								orcamentos: validacao.escolha?.cotacoesOrdenadas.length ?? 0,
 								totalEmCentavos: validacao.totalEmCentavos,
 							})),
 						}
