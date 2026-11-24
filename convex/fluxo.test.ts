@@ -637,9 +637,13 @@ describe("acesso às escolas", () => {
 		await outra.mutation(api.acessos.aceitarConvite, { codigo, nome: "João" });
 		const [maria, joao] = await diretora.query(api.acessos.membros, { codigoInep: INEP_COMUM });
 		const terceira = diretora.withIdentity({ subject: "usuario_terceira" });
+		expect([maria.responsavel, joao.responsavel]).toEqual([true, false]);
 		await expect(terceira.mutation(api.acessos.removerMembro, { membroId: joao._id })).rejects.toThrow("Só quem cuida");
+		await expect(outra.mutation(api.acessos.removerMembro, { membroId: maria._id })).rejects.toThrow("assumiu a escola primeiro");
 		await diretora.mutation(api.acessos.removerMembro, { membroId: joao._id });
-		await expect(diretora.mutation(api.acessos.removerMembro, { membroId: maria._id })).rejects.toThrow("não pode ficar sem responsável");
+		await expect(diretora.mutation(api.acessos.removerMembro, { membroId: maria._id })).rejects.toThrow(
+			"não pode ficar sem responsável",
+		);
 		await expect(outra.mutation(api.itens.adicionar, ITEM)).rejects.toThrow("Peça um convite");
 		expect(await diretora.mutation(internal.acessos.liberarEscola, { codigoInep: INEP_COMUM })).toBe(1);
 		expect(await diretora.run((ctx) => ctx.db.query("contato").collect())).toEqual([]);

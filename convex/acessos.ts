@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, type MutationCtx, query } from "./_generated/server";
 import { buscarEscola } from "./escolas";
-import { buscarMembro, exigirEdicao, exigirMembro, tornarMembro, usuarioAtual } from "./lib/acesso";
+import { buscarMembro, exigirEdicao, exigirMembro, maisAntigo, membrosDaEscola, tornarMembro, usuarioAtual } from "./lib/acesso";
 import { falhar } from "./lib/falha";
 
 const VALIDADE_DO_CONVITE_EM_MS = 7 * 24 * 60 * 60_000;
@@ -59,14 +59,18 @@ export const membros = query({
 		if (!escola || !usuario) {
 			return [];
 		}
-		const membros = await ctx.db
-			.query("membro")
-			.withIndex("por_escola_usuario", (q) => q.eq("escolaId", escola._id))
-			.collect();
+		const membros = await membrosDaEscola(ctx, escola._id);
 		if (!membros.some((membro) => membro.usuario === usuario)) {
 			return [];
 		}
-		return membros.map(({ _id, nome, entrouEm, usuario: dono }) => ({ _id, nome, entrouEm, souEu: dono === usuario }));
+		const responsavel = maisAntigo(membros);
+		return membros.map(({ _id, nome, entrouEm, usuario: dono }) => ({
+			_id,
+			nome,
+			entrouEm,
+			souEu: dono === usuario,
+			responsavel: _id === responsavel._id,
+		}));
 	},
 });
 
@@ -75,13 +79,13 @@ export const removerMembro = mutation({
 	handler: async (ctx, { membroId }) => {
 		const membro = (await ctx.db.get(membroId)) ?? falhar("Esta pessoa já saiu da escola.");
 		const escola = (await ctx.db.get(membro.escolaId)) ?? falhar("A escola não existe mais.");
-		await exigirMembro(ctx, escola);
-		const membros = await ctx.db
-			.query("membro")
-			.withIndex("por_escola_usuario", (q) => q.eq("escolaId", escola._id))
-			.take(2);
+		const usuario = await exigirMembro(ctx, escola);
+		const membros = await membrosDaEscola(ctx, escola._id);
 		if (membros.length <= 1) {
 			falhar("A escola não pode ficar sem responsável. Convide outra pessoa antes de sair.");
+		}
+		if (membro.usuario !== usuario && maisAntigo(membros).usuario !== usuario) {
+			falhar("Só quem assumiu a escola primeiro tira outras pessoas. Você pode sair quando quiser.");
 		}
 		await ctx.db.delete(membroId);
 	},

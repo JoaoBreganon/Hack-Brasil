@@ -11,5 +11,5 @@ export default async function proxy(requisicao: NextRequest) {
 }
 
 export const config = {
-	matcher: ["/((?!_next/static|_next/image|.*\.(?:svg|png|jpg|jpeg|webp|ico|woff2?|txt|xml|webmanifest)$).*)"],
+	matcher: ["/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|webp|ico|woff2?|txt|xml|webmanifest)$).*)"],
 };

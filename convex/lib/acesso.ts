@@ -22,6 +22,17 @@ export function buscarMembro(ctx: QueryCtx, escolaId: Id<"escola">, usuario: str
 		.unique();
 }
 
+export function membrosDaEscola(ctx: QueryCtx, escolaId: Id<"escola">): Promise<Doc<"membro">[]> {
+	return ctx.db
+		.query("membro")
+		.withIndex("por_escola_usuario", (q) => q.eq("escolaId", escolaId))
+		.take(LIMITES.membrosPorEscola);
+}
+
+export function maisAntigo(membros: Doc<"membro">[]): Doc<"membro"> {
+	return membros.reduce((antigo, membro) => (membro.entrouEm < antigo.entrouEm ? membro : antigo));
+}
+
 export async function lerAcesso(ctx: QueryCtx, escola: Doc<"escola">): Promise<Acesso> {
 	const demonstracao = ehEscolaDeDemonstracao(escola.codigoInep);
 	const usuario = await usuarioAtual(ctx);
@@ -71,20 +82,17 @@ export async function tornarMembro(ctx: MutationCtx, escola: Doc<"escola">, usua
 	if (await buscarMembro(ctx, escola._id, usuario)) {
 		return;
 	}
-	const [escolasDaConta, membrosDaEscola] = await Promise.all([
+	const [escolasDaConta, membros] = await Promise.all([
 		ctx.db
 			.query("membro")
 			.withIndex("por_usuario", (q) => q.eq("usuario", usuario))
 			.take(LIMITES.escolasPorConta),
-		ctx.db
-			.query("membro")
-			.withIndex("por_escola_usuario", (q) => q.eq("escolaId", escola._id))
-			.take(LIMITES.membrosPorEscola),
+		membrosDaEscola(ctx, escola._id),
 	]);
 	if (escolasDaConta.length >= LIMITES.escolasPorConta) {
 		falhar(`Cada conta cuida de até ${LIMITES.escolasPorConta} escolas.`);
 	}
-	if (membrosDaEscola.length >= LIMITES.membrosPorEscola) {
+	if (membros.length >= LIMITES.membrosPorEscola) {
 		falhar(`Cada escola aceita até ${LIMITES.membrosPorEscola} pessoas cuidando dela.`);
 	}
 	await ctx.db.insert("membro", {

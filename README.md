@@ -124,7 +124,7 @@ pnpm dev
 
 **Variáveis de ambiente**
 
-O `.env.local` da raiz guarda as variáveis do site. O `pnpm convex:dev` preenche as do Convex na primeira vez.
+O `.env.local` da raiz guarda as variáveis do site. Copie o `.env.example` antes do primeiro `pnpm convex:dev`: o Convex procura `NEXT_PUBLIC_CONVEX_URL` no arquivo e preenche essa variável. Sem ela no arquivo, ele grava `CONVEX_URL`, que o site não lê.
 
 ```env
 NEXT_PUBLIC_SITE_URL=
@@ -147,7 +147,7 @@ NEXT_PUBLIC_WORKOS_REDIRECT_URI=
 
 Sem `NEXT_PUBLIC_WORKOS_REDIRECT_URI`, o site esconde o botão de entrar e as escolas ficam só para leitura, menos a de demonstração.
 
-**Quem pode mudar uma escola:** quem assume a escola primeiro (ou importa a planilha CSV dela) passa a cuidar dela e chama outras pessoas pela tela **Quem cuida**, com um link de convite que vale por 7 dias e para uma pessoa só. Cada conta cuida de até 20 escolas. Se alguém assumir uma escola por engano, libere pelo painel do Convex com `npx convex run acessos:liberarEscola '{"codigoInep":"..."}'`.
+**Quem pode mudar uma escola:** quem assume a escola primeiro (ou importa a planilha CSV dela) passa a cuidar dela e chama outras pessoas pela tela **Quem cuida**, com um link de convite que vale por 7 dias e para uma pessoa só. Só a pessoa mais antiga da escola tira outras pessoas; as demais só podem sair. Cada conta cuida de até 20 escolas. Se alguém assumir uma escola por engano, libere pelo painel do Convex com `npx convex run acessos:liberarEscola '{"codigoInep":"..."}'`.
 
 As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Nenhuma é obrigatória para a demo: sem a `FIRECRAWL_API_KEY` a busca de preços usa preços de exemplo, sem a `LLM_API_KEY` a sugestão de itens usa as regras fixas, e sem as chaves da Nvoip o envio de alertas avisa que não está configurado. E-mail (Resend) ainda não está no código, então não precisa de chave.
 

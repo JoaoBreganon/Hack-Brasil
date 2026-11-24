@@ -19,7 +19,7 @@ function LinhaDoMembro({
 	membro,
 	podeRemover,
 }: {
-	membro: { _id: Id<"membro">; nome: string; entrouEm: number; souEu: boolean };
+	membro: { _id: Id<"membro">; nome: string; entrouEm: number; souEu: boolean; responsavel: boolean };
 	podeRemover: boolean;
 }) {
 	const remover = useOperacao(useMutation(api.acessos.removerMembro));
@@ -31,7 +31,9 @@ function LinhaDoMembro({
 					{membro.nome}
 					{membro.souEu && <span className="font-normal text-muted-foreground"> (você)</span>}
 				</span>
-				<span className="text-[13px] text-muted-foreground">Desde {formatarData(new Date(membro.entrouEm))}</span>
+				<span className="text-[13px] text-muted-foreground">
+					{membro.responsavel ? "Responsável desde" : "Desde"} {formatarData(new Date(membro.entrouEm))}
+				</span>
 			</span>
 			{podeRemover && (
 				<Button
@@ -48,6 +50,10 @@ function LinhaDoMembro({
 			)}
 		</li>
 	);
+}
+
+function souResponsavel(membros: { souEu: boolean; responsavel: boolean }[]): boolean {
+	return membros.some(({ souEu, responsavel }) => souEu && responsavel);
 }
 
 function Membros({ codigoInep }: { codigoInep: string }) {
@@ -68,7 +74,11 @@ function Membros({ codigoInep }: { codigoInep: string }) {
 			) : (
 				<ul>
 					{membros.map((membro) => (
-						<LinhaDoMembro key={membro._id} membro={membro} podeRemover={membros.length > 1} />
+						<LinhaDoMembro
+							key={membro._id}
+							membro={membro}
+							podeRemover={membros.length > 1 && (membro.souEu || souResponsavel(membros))}
+						/>
 					))}
 				</ul>
 			)}
