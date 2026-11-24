@@ -17,7 +17,7 @@ type Campos<Tabela> = Omit<Tabela, "_id" | "_creationTime">;
 
 describe("schema do Convex alinhado com @aloca/dominio", () => {
 	it("escola e saldo guardam os mesmos campos do domínio", () => {
-		expectTypeOf<Omit<Campos<Doc<"escola">>, "envioManualEm">>().toEqualTypeOf<Escola>();
+		expectTypeOf<Omit<Campos<Doc<"escola">>, "envioManualEm" | "publicadaEm">>().toEqualTypeOf<Escola>();
 		expectTypeOf<Doc<"saldo">["saldo"]>().toEqualTypeOf<RegistroDeSaldo["saldo"]>();
 		expectTypeOf<Doc<"saldo">["fonte"]>().toEqualTypeOf<RegistroDeSaldo["fonte"]>();
 	});

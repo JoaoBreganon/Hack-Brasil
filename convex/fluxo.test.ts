@@ -153,6 +153,7 @@ describe("painel da escola", () => {
 		const t = await escolaComSaldo();
 		const painel = await t.query(api.painel.daEscola, { codigoInep: INEP });
 		expect(painel?.escola).toEqual(ESCOLA);
+		expect(painel?.publicada).toBe(false);
 		expect(painel?.saldo?.saldo).toEqual(COLETA.saldo);
 		expect(painel?.saldo?.pendencias).toHaveLength(1);
 		expect(painel?.plano).toBeNull();
@@ -1024,5 +1025,36 @@ describe("sugestão de itens", () => {
 		await t.mutation(api.itens.preencherComExemplo, { codigoInep: INEP });
 		await t.mutation(api.planos.aprovar, { codigoInep: INEP });
 		await expect(t.action(api.sugestoes.gerar, { codigoInep: INEP })).rejects.toThrow("Reabra o plano");
+	});
+});
+
+describe("página pública da escola", () => {
+	it("só aparece depois que quem cuida publica e mostra só o plano aprovado", async () => {
+		const diretora = await escolaComResponsavel();
+		const pagina = () => diretora.query(api.transparencia.daEscola, { codigoInep: INEP_COMUM });
+		const publicar = (quem: Teste, publicar: boolean) =>
+			quem.mutation(api.transparencia.publicar, { codigoInep: INEP_COMUM, publicar });
+		expect(await pagina()).toBeNull();
+		await expect(publicar(diretora.withIdentity(OUTRA_PESSOA), true)).rejects.toThrow("Só quem cuida");
+		await publicar(diretora, true);
+		await diretora.mutation(api.itens.preencherComExemplo, { codigoInep: INEP_COMUM });
+		expect(await pagina()).toMatchObject({ escola: { codigoInep: INEP_COMUM }, plano: null });
+		await diretora.mutation(api.planos.aprovar, { codigoInep: INEP_COMUM });
+		const aprovada = await pagina();
+		const total = aprovada?.plano?.itens.reduce((soma, { totalEmCentavos }) => soma + totalEmCentavos, 0);
+		expect(aprovada?.plano?.itens.length).toBeGreaterThan(0);
+		expect(total).toBe((aprovada?.plano?.total.custeio ?? 0) + (aprovada?.plano?.total.capital ?? 0));
+		expect(await diretora.query(api.transparencia.publicadas, {})).toEqual([
+			{ codigoInep: INEP_COMUM, publicadaEm: expect.any(Number) },
+		]);
+		await publicar(diretora, false);
+		expect(await pagina()).toBeNull();
+		expect(await diretora.query(api.transparencia.publicadas, {})).toEqual([]);
+	});
+
+	it("deixa a página da demonstração sempre no ar", async () => {
+		const t = await escolaComSaldo();
+		expect(await t.query(api.transparencia.daEscola, { codigoInep: INEP })).toEqual({ escola: ESCOLA, plano: null });
+		await expect(t.mutation(api.transparencia.publicar, { codigoInep: INEP, publicar: false })).rejects.toThrow("sempre no ar");
 	});
 });

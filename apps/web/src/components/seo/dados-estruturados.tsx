@@ -1,4 +1,5 @@
 import { SITE } from "@/config/site";
+import { JsonLd } from "./json-ld";
 
 const DADOS = {
 	"@context": "https://schema.org",
@@ -13,8 +14,6 @@ const DADOS = {
 	author: SITE.autores.map((nome) => ({ "@type": "Person", name: nome })),
 };
 
-const JSON_SEGURO = JSON.stringify(DADOS).replace(/</g, "\\u003c");
-
 export function DadosEstruturados() {
-	return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON_SEGURO }} />;
+	return <JsonLd dados={DADOS} />;
 }

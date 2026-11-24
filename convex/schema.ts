@@ -43,7 +43,9 @@ export const pendenciaDoPdde = v.object({
 });
 
 export default defineSchema({
-	escola: defineTable({ ...camposDaEscola, envioManualEm: v.optional(v.number()) }).index("por_codigo_inep", ["codigoInep"]),
+	escola: defineTable({ ...camposDaEscola, envioManualEm: v.optional(v.number()), publicadaEm: v.optional(v.number()) })
+		.index("por_codigo_inep", ["codigoInep"])
+		.index("por_publicacao", ["publicadaEm"]),
 
 	saldo: defineTable({
 		escolaId: v.id("escola"),

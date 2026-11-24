@@ -4,24 +4,16 @@ import { formatarData, formatarReais, motivoForaDoPlano } from "@aloca/dominio";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 import { CabecalhoDaPagina } from "@/components/escola/cabecalho-da-pagina";
+import { Cifra } from "@/components/escola/cifra";
 import { PainelCarregado } from "@/components/escola/painel-carregado";
 import { buttonVariants } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { enderecoDaArea } from "@/config/navegacao";
 import { AprovacaoDoPlano } from "./aprovacao-do-plano";
 import { BaixarPlanilha } from "./baixar-planilha";
+import { PaginaPublica } from "./pagina-publica";
 
 const COLUNAS = "grid grid-cols-[minmax(0,1fr)_104px] items-center gap-x-4 sm:grid-cols-[minmax(0,1fr)_132px_44px_108px_116px]";
-
-function Cifra({ rotulo, valor, apoio }: { rotulo: string; valor: string; apoio: string }) {
-	return (
-		<div className="flex min-w-[180px] flex-1 flex-col px-5 py-4 sm:px-6 sm:py-5">
-			<dt className="text-sm text-muted-foreground">{rotulo}</dt>
-			<dd className="text-2xl font-bold tabular-nums">{valor}</dd>
-			<dd className="text-[13px] text-muted-foreground tabular-nums">{apoio}</dd>
-		</div>
-	);
-}
 
 export function TelaDoPlano() {
 	return (
@@ -168,6 +160,12 @@ export function TelaDoPlano() {
 								</ul>
 							</section>
 						)}
+						<PaginaPublica
+							codigoInep={codigoInep}
+							publicada={dados.publicada}
+							demonstracao={dados.acesso.demonstracao}
+							membro={dados.acesso.membro}
+						/>
 					</>
 				);
 			}}
