@@ -16,6 +16,10 @@ export const LIMITES = {
 	escolasPorConta: 20,
 	membrosPorEscola: 10,
 	convitesPorEscola: 10,
+	escolasPorRede: 100,
+	membrosPorRede: 20,
+	convitesPorRede: 10,
+	nomeDaRede: { minimo: 3, maximo: 80 },
 	planilha: 500_000,
 } as const;
 

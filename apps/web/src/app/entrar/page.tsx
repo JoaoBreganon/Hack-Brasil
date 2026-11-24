@@ -45,6 +45,9 @@ export default function PaginaDeEntrada() {
 						>
 							Abrir a escola de demonstração
 						</Link>
+						<Link href="/rede" className="self-start text-sm font-semibold text-azul-texto hover:underline">
+							É da secretaria de educação? Abra o painel da rede
+						</Link>
 						<MinhasEscolas />
 					</div>
 				</main>

@@ -4,16 +4,8 @@ import type { Doc } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, type MutationCtx, query } from "./_generated/server";
 import { buscarEscola } from "./escolas";
 import { buscarMembro, exigirEdicao, exigirMembro, maisAntigo, membrosDaEscola, tornarMembro, usuarioAtual } from "./lib/acesso";
+import { FORMATO_DO_CODIGO, gerarCodigo, VALIDADE_DO_CONVITE_EM_MS } from "./lib/codigo";
 import { falhar } from "./lib/falha";
-
-const VALIDADE_DO_CONVITE_EM_MS = 7 * 24 * 60 * 60_000;
-const FORMATO_DO_CODIGO = /^[0-9a-f]{32}$/;
-
-function gerarCodigo(): string {
-	const bytes = new Uint8Array(16);
-	crypto.getRandomValues(bytes);
-	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
 
 async function escolaBuscada(ctx: MutationCtx, codigoInep: string): Promise<Doc<"escola">> {
 	return (await buscarEscola(ctx, codigoInep)) ?? falhar("Busque o saldo da escola antes de continuar.");

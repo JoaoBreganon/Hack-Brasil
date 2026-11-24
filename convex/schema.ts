@@ -123,6 +123,35 @@ export default defineSchema({
 		.index("por_codigo", ["codigo"])
 		.index("por_escola", ["escolaId"]),
 
+	rede: defineTable({
+		nome: v.string(),
+		criadaEm: v.number(),
+	}),
+
+	membroDaRede: defineTable({
+		redeId: v.id("rede"),
+		usuario: v.string(),
+		nome: v.string(),
+		entrouEm: v.number(),
+	})
+		.index("por_rede", ["redeId"])
+		.index("por_usuario", ["usuario"]),
+
+	escolaDaRede: defineTable({
+		redeId: v.id("rede"),
+		codigoInep: v.string(),
+		adicionadaEm: v.number(),
+	}).index("por_rede_codigo", ["redeId", "codigoInep"]),
+
+	conviteDaRede: defineTable({
+		redeId: v.id("rede"),
+		codigo: v.string(),
+		criadoEm: v.number(),
+		expiraEm: v.number(),
+	})
+		.index("por_codigo", ["codigo"])
+		.index("por_rede", ["redeId"]),
+
 	uso: defineTable({
 		acao: acaoLimitada,
 		em: v.number(),

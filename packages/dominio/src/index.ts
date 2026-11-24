@@ -18,6 +18,7 @@ export * from "./plano/entradas";
 export * from "./plano/plano";
 export * from "./prazo/prazo";
 export * from "./prazo/simulacao";
+export * from "./rede/rede";
 export * from "./regras/fontes";
 export * from "./regras/regras";
 export * from "./risco/risco";

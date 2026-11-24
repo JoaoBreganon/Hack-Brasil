@@ -1116,3 +1116,67 @@ describe("página pública da escola", () => {
 		await expect(t.mutation(api.transparencia.publicar, { codigoInep: INEP, publicar: false })).rejects.toThrow("sempre no ar");
 	});
 });
+
+describe("painel da rede", () => {
+	const SECRETARIA = { subject: "usuario_secretaria", name: "Ana" };
+
+	async function redeCriada() {
+		const diretora = await escolaComResponsavel();
+		await diretora.mutation(api.itens.preencherComExemplo, { codigoInep: INEP_COMUM });
+		await diretora.mutation(api.planos.aprovar, { codigoInep: INEP_COMUM });
+		const secretaria = diretora.withIdentity(SECRETARIA);
+		await secretaria.mutation(api.redes.criar, { nome: "Rede Municipal de Adamantina", seuNome: "Ana" });
+		return { diretora, secretaria };
+	}
+
+	it("pede conta e rede antes de mostrar o painel", async () => {
+		const t = convexTest(schema, MODULOS);
+		expect(await t.query(api.redes.minha, {})).toBeNull();
+		await expect(t.mutation(api.redes.adicionarEscolas, { texto: INEP_COMUM })).rejects.toThrow("Entre com sua conta");
+		await expect(t.withIdentity(SECRETARIA).mutation(api.redes.adicionarEscolas, { texto: INEP_COMUM })).rejects.toThrow("Crie a rede");
+		await expect(t.withIdentity(SECRETARIA).mutation(api.redes.criar, { nome: "R", seuNome: "Ana" })).rejects.toThrow("nome de 3");
+	});
+
+	it("acompanha as escolas coladas pelo INEP e põe primeiro as que precisam agir", async () => {
+		const { secretaria } = await redeCriada();
+		await secretaria.mutation(api.redes.adicionarEscolas, { texto: `${INEP_COMUM}\n99000099 abc` });
+		expect(await secretaria.mutation(api.redes.adicionarEscolas, { texto: INEP_COMUM })).toEqual({
+			adicionadas: 0,
+			repetidas: 1,
+			invalidos: [],
+		});
+		const painel = await secretaria.query(api.redes.minha, {});
+		expect(painel?.rede.nome).toBe("Rede Municipal de Adamantina");
+		expect(painel?.escolas.map(({ codigoInep, nivel }) => [codigoInep, nivel])).toEqual([
+			[INEP_COMUM, "atenção"],
+			["99000099", "sem dados"],
+		]);
+		expect(painel?.escolas[0]).toMatchObject({ temResponsavel: true, pendencias: 1 });
+		expect(painel?.escolas[0].totalAprovado).toBeGreaterThan(0);
+		expect(painel?.resumo).toMatchObject({ escolas: 2, comPlanoAprovado: 1, precisamAgir: 1 });
+		expect(painel?.membros).toEqual([expect.objectContaining({ nome: "Ana", souEu: true })]);
+		await secretaria.mutation(api.redes.removerEscola, { codigoInep: "99000099" });
+		expect((await secretaria.query(api.redes.minha, {}))?.escolas).toHaveLength(1);
+	});
+
+	it("não deixa quem está fora da rede ver o painel e chama colegas por convite", async () => {
+		const { diretora, secretaria } = await redeCriada();
+		expect(await diretora.query(api.redes.minha, {})).toBeNull();
+		const codigo = await secretaria.mutation(api.redes.criarConvite, {});
+		expect(await diretora.query(api.redes.convite, { codigo })).toEqual({ nomeDaRede: "Rede Municipal de Adamantina", valido: true });
+		await diretora.mutation(api.redes.aceitarConvite, { codigo, nome: "Maria" });
+		expect((await diretora.query(api.redes.minha, {}))?.membros).toHaveLength(2);
+		await expect(secretaria.withIdentity(OUTRA_PESSOA).mutation(api.redes.aceitarConvite, { codigo, nome: "João" })).rejects.toThrow(
+			"não vale mais",
+		);
+		await expect(diretora.mutation(api.redes.criar, { nome: "Outra rede", seuNome: "Maria" })).rejects.toThrow("já participa");
+	});
+
+	it("limita as escolas de cada rede", async () => {
+		const { secretaria } = await redeCriada();
+		const codigos = Array.from({ length: LIMITES.escolasPorRede + 1 }, (_, indice) => String(35_000_000 + indice));
+		await expect(secretaria.mutation(api.redes.adicionarEscolas, { texto: codigos.join("\n") })).rejects.toThrow(
+			`até ${LIMITES.escolasPorRede} escolas`,
+		);
+	});
+});

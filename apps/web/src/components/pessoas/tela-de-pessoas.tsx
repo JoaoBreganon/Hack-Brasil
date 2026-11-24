@@ -4,13 +4,11 @@ import { formatarData } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { CopyIcon, LinkIcon, UserMinusIcon } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { UserMinusIcon } from "lucide-react";
+import { LinkDeConvite } from "@/components/conta/link-de-convite";
 import { CabecalhoDaPagina } from "@/components/escola/cabecalho-da-pagina";
 import { PainelCarregado } from "@/components/escola/painel-carregado";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { useOperacao } from "@/hooks/use-operacao";
@@ -87,54 +85,13 @@ function Membros({ codigoInep }: { codigoInep: string }) {
 }
 
 function Convite({ codigoInep }: { codigoInep: string }) {
-	const criar = useOperacao(useMutation(api.acessos.criarConvite));
-	const [endereco, setEndereco] = useState<string | null>(null);
-
-	async function criarConvite() {
-		const codigo = await criar.executar({ codigoInep });
-		if (codigo) {
-			setEndereco(`${window.location.origin}/convite/${codigo}`);
-		}
-	}
-
-	async function copiar() {
-		if (!endereco) {
-			return;
-		}
-		try {
-			await navigator.clipboard.writeText(endereco);
-			toast.success("Link copiado.");
-		} catch {
-			toast.error("Não deu para copiar. Selecione o link e copie à mão.");
-		}
-	}
-
+	const criarConvite = useMutation(api.acessos.criarConvite);
 	return (
-		<section
-			aria-labelledby="titulo-convite"
-			className="flex min-w-0 flex-[1_1_360px] flex-col gap-4 rounded-lg border border-border bg-card p-5"
-		>
-			<div className="flex flex-col gap-0.5">
-				<h2 id="titulo-convite" className="font-semibold">
-					Convidar alguém
-				</h2>
-				<p className="text-sm text-pretty text-muted-foreground">
-					Mande o link para quem também cuida do PDDE, como o tesoureiro da APM. Ele vale por 7 dias e para uma pessoa só.
-				</p>
-			</div>
-			{endereco && (
-				<div className="flex gap-2">
-					<Input readOnly value={endereco} aria-label="Link do convite" onFocus={(evento) => evento.target.select()} />
-					<Button variant="secondary" size="icon" onClick={copiar} aria-label="Copiar o link" title="Copiar o link">
-						<CopyIcon />
-					</Button>
-				</div>
-			)}
-			<Button onClick={criarConvite} disabled={criar.executando} className="self-start">
-				{criar.executando ? <Spinner data-icon="inline-start" /> : <LinkIcon data-icon="inline-start" />}
-				{endereco ? "Criar outro link" : "Criar link de convite"}
-			</Button>
-		</section>
+		<LinkDeConvite
+			descricao="Mande o link para quem também cuida do PDDE, como o tesoureiro da APM."
+			criar={() => criarConvite({ codigoInep })}
+			caminho={(codigo) => `/convite/${codigo}`}
+		/>
 	);
 }
 
