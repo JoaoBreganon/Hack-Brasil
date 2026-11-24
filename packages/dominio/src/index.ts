@@ -5,6 +5,7 @@ export * from "./calendario/meses";
 export * from "./contato/contato";
 export * from "./escola/escola";
 export * from "./exemplos/escola-exemplo";
+export * from "./exportacao/planilha";
 export * from "./formato/formatar";
 export * from "./importacao/csv";
 export * from "./importacao/pdde-info";

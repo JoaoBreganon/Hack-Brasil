@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { enderecoDaArea } from "@/config/navegacao";
 import { AprovacaoDoPlano } from "./aprovacao-do-plano";
+import { BaixarPlanilha } from "./baixar-planilha";
 
 const COLUNAS = "grid grid-cols-[minmax(0,1fr)_104px] items-center gap-x-4 sm:grid-cols-[minmax(0,1fr)_132px_44px_108px_116px]";
 
@@ -32,6 +33,7 @@ export function TelaDoPlano() {
 				const aprovadoEm = dados.plano?.aprovadoEm;
 				const acoes = (
 					<>
+						<BaixarPlanilha codigoInep={codigoInep} exercicio={derivados.prazo.situacao.exercicio} plano={plano} />
 						{aprovado && (
 							<Link href={enderecoDaArea(codigoInep, "ata")} className={buttonVariants({ variant: "secondary" })}>
 								Abrir a ata
