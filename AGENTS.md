@@ -21,4 +21,3 @@
 - `useOperacao` devolve `undefined` quando a operação falha. Mutation sem retorno chega ao cliente como `null`, então confira o sucesso com `!== undefined`.
 - Alertas: cada contato tem celular, e-mail ou os dois. `convex/alertas.ts` monta os envios pelos canais configurados (Nvoip para celular, Resend para e-mail) e registra cada um com o canal ou o erro. Nos testes, `nvoipRespondendo()` e `resendRespondendo()` simulam os serviços.
 - Painel da rede (`convex/redes.ts`): só quem está em `membroDaRede` vê a rede. O risco, a ordem e o resumo das escolas vêm de `@aloca/dominio` (`avaliarEscolaDaRede`, `ordenarPorRisco`, `resumirRede`). Códigos de convite saem de `convex/lib/codigo.ts`.
-- A página pública (`/transparencia/[inep]`) lê o Convex no servidor com `fetchQuery` dentro de `"use cache"` (`apps/web/src/lib/pagina-publica.ts`), por isso pode levar alguns minutos para refletir uma mudança.

@@ -21,9 +21,9 @@ Um ciclo só: **detectar → decidir → executar → mostrar**.
 | Detectar | Saldo, repasses e pendências de cada escola, lidos no PDDE Info (ou importados por planilha CSV quando o site está fora do ar) |
 | Decidir | Risco de estorno com contagem de dias úteis e plano de compra sugerido por IA, cruzando saldo, o que a escola precisa e regras do programa |
 | Executar | Pesquisa de 3 preços por item, ata da Unidade Executora e mapa de preços em PDF |
-| Mostrar | Página pública da escola com o plano aprovado, planilha do plano e painel da rede para a secretaria |
+| Mostrar | Plano em planilha para a APM e painel da rede para a secretaria |
 
-O plano de compra é a entrega principal, com um contador de dias até o prazo no topo. Alertas por WhatsApp (com SMS de reserva) e por e-mail avisam diretor e tesoureiro quando o prazo se aproxima. A secretaria acompanha todas as escolas da rede num painel só, e pais e comunidade veem o plano aprovado na página pública da escola.
+O plano de compra é a entrega principal, com um contador de dias até o prazo no topo. Alertas por WhatsApp (com SMS de reserva) e por e-mail avisam diretor e tesoureiro quando o prazo se aproxima. A secretaria acompanha todas as escolas da rede num painel só.
 
 A prestação de contas continua no sistema oficial do FNDE. A plataforma cuida do que vem antes dela.
 
@@ -40,7 +40,6 @@ A prestação de contas continua no sistema oficial do FNDE. A plataforma cuida 
 |---|---|
 | Diretor e Unidade Executora (APM, caixa escolar) | Alerta de prazo, plano de compra, preços e ata |
 | Secretaria de educação | Painel da rede com o saldo, o risco de estorno, as pendências e os planos aprovados de cada escola |
-| Pais e conselho escolar | Página pública com o plano aprovado: itens, fornecedores e valores |
 
 Quem contrata é a **secretaria de educação**, com assinatura por escola. É ela que analisa as contas das escolas da rede, e pendência na prestação de contas suspende o repasse. Escolas e famílias não pagam.
 
@@ -67,7 +66,7 @@ flowchart TD
         C --> D[Inteligência: IA com saída estruturada ou regras fixas, sempre pelo validador do PDDE]
         D --> E[Ações: ata e mapa de preços em PDF, planilha CSV, alertas por WhatsApp e SMS da Nvoip e e-mail do Resend]
         E --> F[Interface: área do diretor, entrada pelo código INEP e login com WorkOS para mudar os dados]
-        F --> G[Página pública da escola e painel da rede para a secretaria]
+        F --> G[Painel da rede para a secretaria]
     end
     subgraph depois [Próximos passos]
         K[Censo Escolar e coleta agendada por rede]
@@ -147,10 +146,9 @@ Sem `NEXT_PUBLIC_WORKOS_REDIRECT_URI`, o site esconde o botão de entrar e as es
 
 **Quem pode mudar uma escola:** quem assume a escola primeiro (ou importa a planilha CSV dela) passa a cuidar dela e chama outras pessoas pela tela **Quem cuida**, com um link de convite que vale por 7 dias e para uma pessoa só. Só a pessoa mais antiga da escola tira outras pessoas; as demais só podem sair. Cada conta cuida de até 20 escolas. Se alguém assumir uma escola por engano, libere pelo painel do Convex com `npx convex run acessos:liberarEscola '{"codigoInep":"..."}'`.
 
-**Página pública, planilha e painel da rede**
+**Planilha e painel da rede**
 
 * **Planilha do plano:** o botão **Baixar planilha** no Plano gera um CSV que o Excel abre em português, com cada item, a situação, o fornecedor escolhido, os três orçamentos e os totais.
-* **Página pública:** quem cuida da escola publica, no Plano, a página `/transparencia/[inep]`. Ela mostra só o plano aprovado, sem conta, entra no sitemap e sai do ar quando a escola tira a publicação ou é liberada. A da escola de demonstração fica sempre no ar.
 * **Painel da rede:** em `/rede`, quem é da secretaria entra com a conta, cria a rede e cola os códigos INEP das escolas. Só quem está na rede vê o painel, e colegas entram por link de convite. Cada conta participa de uma rede; cada rede acompanha até 100 escolas e 20 pessoas.
 
 As chaves dos serviços ficam no próprio Convex, porque é lá que as funções rodam. Nenhuma é obrigatória para a demo: sem a `FIRECRAWL_API_KEY` a busca de preços usa preços de exemplo, sem a `LLM_API_KEY` a sugestão de itens usa as regras fixas, e sem as chaves da Nvoip e do Resend o envio de alertas avisa que não está configurado. Cada canal funciona sozinho: com só o Resend, o alerta vai só por e-mail.
