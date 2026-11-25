@@ -25,7 +25,3 @@ export function enderecoDaArea(codigoInep: string, caminho: string, busca?: Reco
 	const base = caminho ? `/escola/${codigoInep}/${caminho}` : `/escola/${codigoInep}`;
 	return busca ? `${base}?${new URLSearchParams(busca).toString()}` : base;
 }
-
-export function enderecoDaPaginaPublica(codigoInep: string): string {
-	return `/transparencia/${codigoInep}`;
-}

@@ -177,7 +177,6 @@ export const liberarEscola = internalMutation({
 				.collect(),
 		]);
 		await Promise.all([...membros, ...convites, ...contatos].map(({ _id }) => ctx.db.delete(_id)));
-		await ctx.db.patch(escola._id, { publicadaEm: undefined });
 		return membros.length;
 	},
 });

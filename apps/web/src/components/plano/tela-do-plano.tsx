@@ -11,7 +11,6 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "
 import { enderecoDaArea } from "@/config/navegacao";
 import { AprovacaoDoPlano } from "./aprovacao-do-plano";
 import { BaixarPlanilha } from "./baixar-planilha";
-import { PaginaPublica } from "./pagina-publica";
 
 const COLUNAS = "grid grid-cols-[minmax(0,1fr)_104px] items-center gap-x-4 sm:grid-cols-[minmax(0,1fr)_132px_44px_108px_116px]";
 
@@ -160,12 +159,6 @@ export function TelaDoPlano() {
 								</ul>
 							</section>
 						)}
-						<PaginaPublica
-							codigoInep={codigoInep}
-							publicada={dados.publicada}
-							demonstracao={dados.acesso.demonstracao}
-							membro={dados.acesso.membro}
-						/>
 					</>
 				);
 			}}

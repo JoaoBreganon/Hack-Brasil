@@ -20,7 +20,6 @@ export const daEscola = query({
 		const itens = plano ? await itensComOrcamentos(ctx, plano._id) : [];
 		return {
 			escola: { codigoInep: escola.codigoInep, nome: escola.nome, municipio: escola.municipio },
-			publicada: Boolean(escola.publicadaEm),
 			acesso,
 			saldo: saldo && {
 				exercicio: saldo.exercicio,

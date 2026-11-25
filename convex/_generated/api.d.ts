@@ -22,7 +22,6 @@ import type * as precos from "../precos.js";
 import type * as redes from "../redes.js";
 import type * as saldos from "../saldos.js";
 import type * as sugestoes from "../sugestoes.js";
-import type * as transparencia from "../transparencia.js";
 import type * as usos from "../usos.js";
 import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 declare const fullApi: ApiFromModules<{
@@ -50,7 +49,6 @@ declare const fullApi: ApiFromModules<{
 	redes: typeof redes;
 	saldos: typeof saldos;
 	sugestoes: typeof sugestoes;
-	transparencia: typeof transparencia;
 	usos: typeof usos;
 }>;
 export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
