@@ -16,7 +16,7 @@ export function Capitulo({ id, rotulo, titulo, texto, className, classeDoRotulo,
 		<section
 			id={id}
 			aria-labelledby={`titulo-${id}`}
-			className={cn("flex flex-wrap items-end gap-12 px-5 py-14 sm:min-h-[90svh] sm:px-10 sm:py-20 lg:px-16 lg:py-24", className)}
+			className={cn("flex flex-wrap items-end gap-12 px-5 py-14 min-h-svh sm:px-10 sm:py-20 lg:px-16 lg:py-24", className)}
 		>
 			<div className="flex min-w-0 flex-[1_1_520px] flex-col gap-5">
 				<span className={cn("text-[15px] font-semibold", classeDoRotulo)}>{rotulo}</span>

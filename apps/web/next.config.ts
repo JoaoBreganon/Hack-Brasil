@@ -43,6 +43,7 @@ const CABECALHOS_DE_SEGURANCA = [
 const nextConfig: NextConfig = {
 	agentRules: false,
 	poweredByHeader: false,
+	devIndicators: false,
 	cacheComponents: true,
 	partialPrefetching: true,
 	transpilePackages: ["@aloca/dominio"],

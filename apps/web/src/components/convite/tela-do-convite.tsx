@@ -57,8 +57,7 @@ export function TelaDoConvite() {
 	return (
 		<Quadro titulo={`Convite para cuidar da ${convite.nomeDaEscola}`}>
 			<p className="text-pretty text-muted-foreground">
-				Ao aceitar, você pode montar o plano de compra, cadastrar celulares e mandar alertas da escola {convite.codigoInep} no
-				Aloca.
+				Ao aceitar, você pode montar o plano de compra, cadastrar contatos e mandar alertas da escola {convite.codigoInep} no Aloca.
 			</p>
 			{!conta.configurada ? (
 				<p className="text-muted-foreground">O login não está ligado neste ambiente.</p>

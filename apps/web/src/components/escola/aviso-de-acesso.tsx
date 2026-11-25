@@ -2,7 +2,8 @@
 
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
-import { LogInIcon, RotateCcwIcon, ShieldCheckIcon } from "lucide-react";
+import { ArrowLeftIcon, LogInIcon, RotateCcwIcon, ShieldCheckIcon } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
@@ -67,7 +68,17 @@ export function AvisoDeAcesso() {
 	const { acesso } = dados;
 	if (acesso.demonstracao) {
 		return (
-			<Aviso acao={<RecomecarDemonstracao />}>
+			<Aviso
+				acao={
+					<div className="flex flex-wrap gap-2">
+						<RecomecarDemonstracao />
+						<Link href="/" className={buttonVariants({ variant: "ghost" })}>
+							<ArrowLeftIcon data-icon="inline-start" />
+							Sair da demonstração
+						</Link>
+					</div>
+				}
+			>
 				Escola de demonstração: qualquer pessoa pode testar o plano aqui, sem conta. Ele volta ao começo depois de uma hora parado.
 			</Aviso>
 		);
@@ -88,7 +99,7 @@ export function AvisoDeAcesso() {
 					</a>
 				}
 			>
-				Só leitura. Para montar o plano, cadastrar celulares e mandar alertas desta escola, entre com sua conta.
+				Só leitura. Para montar o plano, cadastrar contatos e mandar alertas desta escola, entre com sua conta.
 			</Aviso>
 		);
 	}

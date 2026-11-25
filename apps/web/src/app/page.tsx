@@ -34,7 +34,7 @@ const NA_SECRETARIA = [
 export default function Inicio() {
 	return (
 		<main id="conteudo" className="flex flex-1 flex-col">
-			<section aria-labelledby="titulo-inicio" className="flex flex-col bg-azul px-5 text-white sm:min-h-[90svh] sm:px-10 lg:px-16">
+			<section aria-labelledby="titulo-inicio" className="flex min-h-svh flex-col bg-azul px-5 text-white sm:px-10 lg:px-16">
 				<CabecalhoDoSite />
 				<div className="flex flex-1 flex-col justify-end gap-8 pt-16 pb-12 sm:pb-20 lg:pb-24">
 					<p className="m-0 text-[15px] font-semibold tracking-[0.06em] uppercase">
@@ -92,7 +92,7 @@ export default function Inicio() {
 			<section
 				id="secretaria"
 				aria-labelledby="titulo-secretaria"
-				className="flex flex-col justify-between gap-12 bg-azul-fundo px-5 py-14 text-tinta sm:min-h-[70svh] sm:px-10 sm:py-20 lg:px-16 lg:py-24"
+				className="flex flex-col justify-between gap-12 bg-azul-fundo px-5 py-14 text-tinta min-h-svh sm:px-10 sm:py-20 lg:px-16 lg:py-24"
 			>
 				<div className="flex flex-col gap-5">
 					<span className="text-[15px] font-semibold">E a secretaria</span>
@@ -118,7 +118,7 @@ export default function Inicio() {
 
 			<section
 				aria-labelledby="titulo-comecar"
-				className="flex flex-col gap-8 bg-azul px-5 pt-14 pb-8 text-white sm:px-10 sm:pt-24 lg:px-16"
+				className="flex min-h-svh flex-col gap-8 bg-azul px-5 pt-14 pb-8 text-white sm:px-10 sm:pt-24 lg:px-16"
 			>
 				<h2
 					id="titulo-comecar"
@@ -141,7 +141,7 @@ export default function Inicio() {
 						Ver a escola de demonstração
 					</Link>
 				</div>
-				<footer className="mt-16 flex flex-wrap justify-between gap-4 border-t border-white/35 pt-5 text-sm">
+				<footer className="mt-auto flex flex-wrap justify-between gap-4 border-t border-white/35 pt-5 text-sm">
 					<span>{SITE.nome} · Hack Brasil 2026, trilha Acesso à educação</span>
 					<span>Dados públicos do PDDE Info (FNDE)</span>
 				</footer>
