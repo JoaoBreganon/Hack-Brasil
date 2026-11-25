@@ -54,14 +54,16 @@ export default function PaginaDeEntrada() {
 				{MES_DO_PRAZO.length > 0 && (
 					<aside
 						aria-label="O prazo do PDDE"
-						className="flex flex-[1_1_420px] items-center justify-center bg-card px-5 py-12 sm:px-12"
+						className="flex flex-[1_1_420px] items-center justify-center bg-azul px-5 py-12 text-white sm:px-12"
 					>
-						<div className="flex max-w-[340px] flex-col gap-6">
-							<p className="font-heading text-[26px] leading-tight font-bold tracking-tight text-balance">
-								A partir de 2027, o saldo do PDDE tem data para acabar.
+						<div className="flex max-w-[400px] flex-col gap-8">
+							<p className="font-heading text-[clamp(40px,4.4vw,64px)] leading-[0.92] font-extrabold tracking-[-0.05em] text-balance">
+								O saldo da escola tem prazo.
 							</p>
-							<CalendarioDoPrazo meses={MES_DO_PRAZO} />
-							<LegendaDoCalendario />
+							<div className="flex flex-col gap-4 rounded-2xl bg-card p-5 text-foreground">
+								<CalendarioDoPrazo meses={MES_DO_PRAZO} />
+								<LegendaDoCalendario />
+							</div>
 						</div>
 					</aside>
 				)}

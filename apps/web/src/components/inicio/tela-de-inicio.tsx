@@ -1,6 +1,6 @@
 "use client";
 
-import { formatarReais, montarMesesDoPrazo } from "@aloca/dominio";
+import { capituloDoPrazo, formatarReais, montarMesesDoPrazo } from "@aloca/dominio";
 import { api } from "@convex/_generated/api";
 import { useAction } from "convex/react";
 import { ArrowRightIcon, TriangleAlertIcon } from "lucide-react";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { CalendarioDoPrazo, LegendaDoCalendario } from "@/components/calendario/calendario-do-prazo";
 import { CabecalhoDaPagina } from "@/components/escola/cabecalho-da-pagina";
+import { CapituloAtual } from "@/components/escola/capitulo-atual";
 import { PainelCarregado } from "@/components/escola/painel-carregado";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -46,6 +47,7 @@ export function TelaDeInicio() {
 				const percentual = saldoTotal > 0 ? Math.min(100, (noPlano / saldoTotal) * 100) : 0;
 				const passo = definirProximoPasso(dados, plano);
 				const [pendencia] = dados.saldo.pendencias;
+				const capitulo = situacao.tipo === "correndo" ? capituloDoPrazo(hoje, situacao.limiteParaUso) : null;
 				return (
 					<>
 						<CabecalhoDaPagina
@@ -62,28 +64,17 @@ export function TelaDeInicio() {
 							}
 						/>
 
-						{situacao.tipo === "correndo" ? (
-							<section
-								aria-labelledby="titulo-prazo"
-								className="flex flex-col gap-6 rounded-lg border border-border bg-card p-5 sm:p-7"
+						{situacao.tipo === "correndo" && capitulo ? (
+							<CapituloAtual
+								capitulo={capitulo}
+								diasUteis={situacao.diasUteisRestantes}
+								limite={DIA_E_MES.format(situacao.limiteParaUso)}
 							>
-								<div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-									<h2 id="titulo-prazo" className="flex items-baseline gap-2.5">
-										<span className="font-heading text-[44px] leading-none font-extrabold tracking-tight tabular-nums">
-											{situacao.diasUteisRestantes}
-										</span>
-										<span className="text-lg font-semibold">dias úteis para usar o saldo</span>
-									</h2>
-									<p className="text-muted-foreground">
-										Até {DIA_E_MES.format(situacao.limiteParaUso)}. O que sobrar é estornado no dia{" "}
-										{situacao.estorno.getUTCDate()}.
-									</p>
-								</div>
 								<CalendarioDoPrazo
 									meses={montarMesesDoPrazo({ hoje, limiteParaUso: situacao.limiteParaUso, estorno: situacao.estorno })}
 								/>
 								<LegendaDoCalendario />
-							</section>
+							</CapituloAtual>
 						) : (
 							<section className="rounded-lg border border-border bg-card p-7">
 								<h2 className="text-lg font-semibold">{prazo.risco.mensagem}</h2>

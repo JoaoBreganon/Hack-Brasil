@@ -17,6 +17,7 @@ export * from "./orcamento/orcamento";
 export * from "./plano/entradas";
 export * from "./plano/plano";
 export * from "./prazo/prazo";
+export * from "./prazo/capitulo";
 export * from "./prazo/simulacao";
 export * from "./rede/rede";
 export * from "./regras/fontes";

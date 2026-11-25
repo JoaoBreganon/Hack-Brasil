@@ -42,6 +42,10 @@
 	--color-apagado: var(--apagado);
 	--color-ambar: var(--ambar);
 	--color-perigo-fundo: var(--perigo-fundo);
+	--color-noite: var(--noite);
+	--color-noite-borda: var(--noite-borda);
+	--color-noite-texto: var(--noite-texto);
+	--color-noite-apagado: var(--noite-apagado);
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
 	--radius-lg: var(--radius);
@@ -79,6 +83,10 @@
 	--destructive: var(--perigo);
 	--perigo: #b8321f;
 	--perigo-fundo: #fbebe8;
+	--noite: #1c2233;
+	--noite-borda: #2c3142;
+	--noite-texto: #c9ccd6;
+	--noite-apagado: #a3a8b8;
 	--custeio: #1838c4;
 	--custeio-fundo: #e8edff;
 	--capital: #8a3a0e;
