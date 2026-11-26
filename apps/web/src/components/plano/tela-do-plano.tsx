@@ -43,7 +43,7 @@ export function TelaDoPlano() {
 								titulo="Plano de compra"
 								frase="Menor preço de cada item, na ordem de prioridade da escola."
 							/>
-							<Empty className="rounded-lg border border-border bg-card py-14">
+							<Empty className="rounded-3xl border border-border/70 bg-card py-14">
 								<EmptyHeader>
 									<EmptyTitle className="text-lg font-semibold">O plano sai da lista de compras</EmptyTitle>
 									<EmptyDescription>
@@ -71,7 +71,7 @@ export function TelaDoPlano() {
 							}
 							acoes={acoes}
 						/>
-						<dl className="flex flex-wrap rounded-lg border border-border bg-card">
+						<dl className="flex flex-wrap rounded-3xl border border-border/70 bg-card">
 							<Cifra
 								rotulo="Total do plano"
 								valor={formatarReais(total)}
@@ -88,7 +88,7 @@ export function TelaDoPlano() {
 								apoio={`de ${formatarReais(saldo.capital)}`}
 							/>
 						</dl>
-						<section aria-labelledby="titulo-entram" className="overflow-hidden rounded-lg border border-border bg-card">
+						<section aria-labelledby="titulo-entram" className="overflow-hidden rounded-3xl border border-border/70 bg-card">
 							<div className="flex flex-wrap items-center justify-between gap-2 px-5 py-4">
 								<h2 id="titulo-entram" className="font-semibold">
 									Entram no plano
@@ -137,7 +137,7 @@ export function TelaDoPlano() {
 							)}
 						</section>
 						{plano.foraDoPlano.length > 0 && (
-							<section aria-labelledby="titulo-fora" className="overflow-hidden rounded-lg border border-border bg-card">
+							<section aria-labelledby="titulo-fora" className="overflow-hidden rounded-3xl border border-border/70 bg-card">
 								<h2 id="titulo-fora" className="px-5 py-4 font-semibold">
 									Ficam de fora
 								</h2>

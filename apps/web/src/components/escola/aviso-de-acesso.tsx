@@ -16,7 +16,7 @@ import { enderecoDeEntrada } from "@/lib/conta";
 
 function Aviso({ children, acao }: { children: ReactNode; acao?: ReactNode }) {
 	return (
-		<div role="note" className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg bg-pilula px-4 py-3 print:hidden">
+		<div role="note" className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-pilula py-3 pr-3 pl-5 print:hidden">
 			<p className="flex-[1_1_320px] text-pretty">{children}</p>
 			{acao}
 		</div>

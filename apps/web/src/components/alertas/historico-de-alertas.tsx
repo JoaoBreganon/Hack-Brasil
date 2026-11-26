@@ -12,7 +12,7 @@ export function HistoricoDeAlertas({ codigoInep }: { codigoInep: string }) {
 		return null;
 	}
 	return (
-		<section aria-labelledby="titulo-historico" className="overflow-hidden rounded-lg border border-border bg-card">
+		<section aria-labelledby="titulo-historico" className="overflow-hidden rounded-3xl border border-border/70 bg-card">
 			<h2 id="titulo-historico" className="px-5 py-4 font-semibold">
 				Últimos envios
 			</h2>

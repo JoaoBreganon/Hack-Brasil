@@ -29,7 +29,7 @@ function Orcamentos({ item }: { item: ItemDoPainel }) {
 
 export function TabelaDeItens({ codigoInep, itens, selecionado, foraDoPlano }: Propriedades) {
 	return (
-		<section aria-label="Itens" className="overflow-hidden rounded-lg border border-border bg-card">
+		<section aria-label="Itens" className="overflow-hidden rounded-3xl border border-border/70 bg-card">
 			<div aria-hidden="true" className={cn(COLUNAS, "px-5 py-3 text-[13px] text-muted-foreground")}>
 				<span>Item</span>
 				<span className="hidden sm:block">Tipo</span>

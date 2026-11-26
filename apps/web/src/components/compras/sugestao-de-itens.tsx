@@ -70,7 +70,10 @@ export function FormularioDeSugestao({ codigoInep, saldoLivre, aoSugerir, classN
 
 export function PainelDeSugestao(propriedades: Propriedades) {
 	return (
-		<section aria-labelledby="titulo-sugerir-itens" className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5 sm:p-6">
+		<section
+			aria-labelledby="titulo-sugerir-itens"
+			className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-card p-5 sm:p-6"
+		>
 			<div className="flex items-start justify-between gap-3">
 				<h2 id="titulo-sugerir-itens" className="text-lg font-semibold">
 					Sugerir itens

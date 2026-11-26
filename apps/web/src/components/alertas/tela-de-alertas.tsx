@@ -16,7 +16,7 @@ function Contatos({ codigoInep, membro }: { codigoInep: string; membro: boolean 
 	return (
 		<section
 			aria-labelledby="titulo-contatos"
-			className="flex min-w-0 flex-[1_1_360px] flex-col overflow-hidden rounded-lg border border-border bg-card"
+			className="flex min-w-0 flex-[1_1_360px] flex-col overflow-hidden rounded-3xl border border-border/70 bg-card"
 		>
 			<div className="px-5 py-4">
 				<h2 id="titulo-contatos" className="font-semibold">

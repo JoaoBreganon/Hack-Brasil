@@ -49,7 +49,7 @@ export function PreviaDoAlerta({ codigoInep, nomeDaEscola, prazo, saldoEmRiscoEm
 	);
 
 	return (
-		<section aria-labelledby="titulo-previa" className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
+		<section aria-labelledby="titulo-previa" className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-card p-5">
 			<h2 id="titulo-previa" className="font-semibold">
 				A mensagem
 			</h2>

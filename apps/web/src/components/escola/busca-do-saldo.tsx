@@ -53,7 +53,7 @@ export function BuscaDoSaldo({ codigoInep }: { codigoInep: string }) {
 	}
 
 	return (
-		<Empty className="rounded-lg border border-border bg-card py-16">
+		<Empty className="rounded-3xl border border-border/70 bg-card py-16">
 			<EmptyHeader>
 				<EmptyTitle className="font-heading text-2xl font-bold">
 					<h1>Ainda não temos o saldo desta escola</h1>

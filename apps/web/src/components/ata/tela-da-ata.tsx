@@ -22,7 +22,7 @@ export function TelaDaAta() {
 					return (
 						<>
 							<CabecalhoDaPagina titulo="Ata da APM" frase="A ata sai do plano de compra aprovado." />
-							<Empty className="rounded-lg border border-border bg-card py-14">
+							<Empty className="rounded-3xl border border-border/70 bg-card py-14">
 								<EmptyHeader>
 									<EmptyTitle className="text-lg font-semibold">Ainda não há o que aprovar</EmptyTitle>
 									<EmptyDescription>Monte o plano de compra para gerar a ata e o mapa de preços.</EmptyDescription>

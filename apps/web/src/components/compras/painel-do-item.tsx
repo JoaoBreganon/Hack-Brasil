@@ -131,7 +131,7 @@ export function PainelDoItem({ codigoInep, item, bloqueado }: Propriedades) {
 	}
 
 	return (
-		<aside aria-labelledby="titulo-item" className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 sm:p-6">
+		<aside aria-labelledby="titulo-item" className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-card p-5 sm:p-6">
 			<div className="flex items-start justify-between gap-3">
 				<div className="flex flex-col">
 					<h2 id="titulo-item" className="text-lg leading-snug font-semibold text-pretty">

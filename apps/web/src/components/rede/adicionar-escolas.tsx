@@ -41,7 +41,7 @@ export function AdicionarEscolas() {
 		<form
 			onSubmit={enviar}
 			aria-labelledby="titulo-adicionar"
-			className="flex min-w-0 flex-[1_1_360px] flex-col gap-4 rounded-lg border border-border bg-card p-5"
+			className="flex min-w-0 flex-[1_1_360px] flex-col gap-4 rounded-3xl border border-border/70 bg-card p-5"
 		>
 			<Field>
 				<FieldLabel id="titulo-adicionar" htmlFor="codigos-inep" className="text-base font-semibold">

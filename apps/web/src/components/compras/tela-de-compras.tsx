@@ -58,7 +58,7 @@ export function TelaDeCompras() {
 					<>
 						<CabecalhoDaPagina
 							titulo="Compras"
-							frase="O que a escola precisa e os orçamentos de cada item."
+							frase="O que a escola precisa, com três orçamentos por item."
 							acoes={
 								!travado && (
 									<>
@@ -110,18 +110,23 @@ export function TelaDeCompras() {
 											aria-pressed={filtro === chave}
 											onClick={() => setFiltro(chave)}
 											className={cn(
-												"inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm transition-colors",
+												"inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors",
 												filtro === chave
-													? "border-border bg-card font-semibold"
-													: "border-transparent text-muted-foreground hover:text-foreground",
+													? "border-tinta bg-tinta text-white"
+													: "border-border bg-card text-muted-foreground hover:text-foreground",
 											)}
 										>
 											{rotulo}
-											<span className="font-normal text-muted-foreground tabular-nums">{itens.length}</span>
+											<span className="font-normal opacity-70 tabular-nums">{itens.length}</span>
 										</button>
 									))}
 								</div>
-								<div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+								<div
+									className={cn(
+										"flex flex-col gap-6",
+										(itemAberto || novo || sugerindo) && "lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start",
+									)}
+								>
 									<TabelaDeItens
 										codigoInep={codigoInep}
 										itens={visiveis}

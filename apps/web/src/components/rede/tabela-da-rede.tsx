@@ -66,7 +66,7 @@ function LinhaDaEscola({ escola }: { escola: LinhaDaRede }) {
 
 export function TabelaDaRede({ escolas }: { escolas: LinhaDaRede[] }) {
 	return (
-		<section aria-labelledby="titulo-escolas" className="overflow-hidden rounded-lg border border-border bg-card">
+		<section aria-labelledby="titulo-escolas" className="overflow-hidden rounded-3xl border border-border/70 bg-card">
 			<h2 id="titulo-escolas" className="px-5 py-4 font-semibold">
 				Escolas, da mais urgente para a mais tranquila
 			</h2>

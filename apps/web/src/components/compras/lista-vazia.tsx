@@ -24,7 +24,7 @@ export function ListaVazia({ codigoInep, saldoLivre, aoSugerir, podeEditar }: Pr
 
 	if (!podeEditar) {
 		return (
-			<Empty className="rounded-lg border border-border bg-card py-14">
+			<Empty className="rounded-3xl border border-border/70 bg-card py-14">
 				<EmptyHeader>
 					<EmptyTitle className="text-lg font-semibold">Nenhum item ainda</EmptyTitle>
 					<EmptyDescription>Quem cuida desta escola no Aloca ainda não montou a lista de compras.</EmptyDescription>
@@ -34,7 +34,7 @@ export function ListaVazia({ codigoInep, saldoLivre, aoSugerir, podeEditar }: Pr
 	}
 
 	return (
-		<Empty className="rounded-lg border border-border bg-card py-14">
+		<Empty className="rounded-3xl border border-border/70 bg-card py-14">
 			<EmptyHeader>
 				<EmptyTitle className="text-lg font-semibold">Nenhum item ainda</EmptyTitle>
 				<EmptyDescription>

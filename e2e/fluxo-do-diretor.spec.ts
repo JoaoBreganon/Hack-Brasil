@@ -9,7 +9,7 @@ function enderecoDaEscola(caminho = "", codigoInep = INEP_DA_DEMONSTRACAO) {
 	return caminho ? `/escola/${codigoInep}/${caminho}` : `/escola/${codigoInep}`;
 }
 
-function titulo(page: Page, nome: string) {
+function titulo(page: Page, nome: string | RegExp) {
 	return page.getByRole("heading", { name: nome, level: 1 });
 }
 
@@ -17,8 +17,8 @@ test.describe.configure({ mode: "serial" });
 
 test("vai da página inicial ao código INEP da escola de demonstração", async ({ page }) => {
 	await page.goto("/");
-	await expect(titulo(page, "Nenhuma escola perde o que já é dela.")).toBeVisible();
-	await page.getByRole("link", { name: "Começar pelo código INEP" }).click();
+	await expect(titulo(page, "O saldo da escola tem prazo.")).toBeVisible();
+	await page.getByRole("link", { name: "Buscar pelo código INEP" }).click();
 
 	await expect(page).toHaveURL(/\/entrar$/);
 	await expect(titulo(page, "Qual é a sua escola?")).toBeVisible();
@@ -37,8 +37,7 @@ test("vai da página inicial ao código INEP da escola de demonstração", async
 	}
 
 	await expect(page).toHaveURL(new RegExp(`/escola/${INEP_DA_DEMONSTRACAO}$`));
-	await expect(page.getByText(`INEP ${INEP_DA_DEMONSTRACAO}`)).toBeVisible();
-	await expect(titulo(page, "Início").or(titulo(page, "Ainda não temos o saldo desta escola"))).toBeVisible();
+	await expect(titulo(page, /ainda sem destino/).or(titulo(page, "Ainda não temos o saldo desta escola"))).toBeVisible();
 });
 
 test("pede login para importar a planilha de uma escola sem saldo", async ({ page }) => {
@@ -54,17 +53,17 @@ test("pede login para importar a planilha de uma escola sem saldo", async ({ pag
 
 test("recomeça a demonstração e mostra o saldo e o prazo no Início", async ({ page }) => {
 	await page.goto(enderecoDaEscola());
-	await expect(titulo(page, "Início")).toBeVisible({ timeout: 90_000 });
+	await expect(titulo(page, /ainda sem destino/)).toBeVisible({ timeout: 90_000 });
 	await expect(page.getByRole("note").filter({ hasText: "Escola de demonstração" })).toBeVisible();
 	await page.getByRole("button", { name: "Recomeçar a demonstração" }).click();
 	await expect(page.getByText("A demonstração voltou ao começo.")).toBeVisible();
 
 	await expect(page.getByRole("navigation", { name: "Áreas da escola" })).toBeVisible();
 	await expect(page.getByText(NOME_DA_ESCOLA).first()).toBeVisible();
-	await expect(page.getByRole("heading", { name: /dias úteis para usar o saldo/ })).toBeVisible();
+	await expect(page.getByText(/dias úteis até/)).toBeVisible();
 	await expect(page.getByRole("table").first()).toBeVisible();
 	await expect(page.getByText("último dia para usar o saldo").first()).toBeAttached();
-	await expect(page.getByRole("region", { name: "Ainda sem destino" })).toContainText(/19\.799,15/);
+	await expect(titulo(page, /ainda sem destino/)).toContainText(/19\.799,15/);
 });
 
 test("monta as compras, barra o item vedado e junta os orçamentos", async ({ page }) => {
@@ -164,7 +163,7 @@ test.describe("no celular", () => {
 		await areas.getByRole("link", { name: "Compras" }).click();
 		await expect(page).toHaveURL(new RegExp(`${enderecoDaEscola("compras")}$`));
 		await expect(areas).toBeHidden();
-		await expect(page.getByRole("banner").getByText("Compras", { exact: true })).toBeVisible();
+		await expect(titulo(page, "Compras")).toBeVisible();
 
 		await page.getByRole("button", { name: "Abrir o menu" }).click();
 		await expect(areas).toBeVisible();

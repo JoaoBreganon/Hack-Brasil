@@ -95,7 +95,7 @@
 	--border: #e4e2dc;
 	--input: #e4e2dc;
 	--ring: var(--azul);
-	--radius: 0.5rem;
+	--radius: 0.875rem;
 }
 
 @layer base {

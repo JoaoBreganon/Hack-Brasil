@@ -20,7 +20,7 @@ export function CriarRede({ seuNome }: { seuNome: string }) {
 	}
 
 	return (
-		<form onSubmit={enviar} className="flex max-w-md flex-col gap-4 rounded-lg border border-border bg-card p-5">
+		<form onSubmit={enviar} className="flex max-w-md flex-col gap-4 rounded-3xl border border-border/70 bg-card p-5">
 			<Field>
 				<FieldLabel htmlFor="nome-da-rede">Nome da rede</FieldLabel>
 				<Input

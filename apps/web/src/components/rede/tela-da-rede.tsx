@@ -39,7 +39,7 @@ function Painel({ dados }: { dados: NonNullable<FunctionReturnType<typeof api.re
 						: "O exercício simulado ainda não tem prazo de estorno."
 				}
 			/>
-			<dl className="flex flex-wrap rounded-lg border border-border bg-card">
+			<dl className="flex flex-wrap rounded-3xl border border-border/70 bg-card">
 				<Cifra
 					rotulo="Saldo das escolas"
 					valor={formatarReais(resumo.saldoTotal)}
@@ -59,7 +59,7 @@ function Painel({ dados }: { dados: NonNullable<FunctionReturnType<typeof api.re
 			{dados.escolas.length > 0 ? (
 				<TabelaDaRede escolas={dados.escolas} />
 			) : (
-				<Empty className="rounded-lg border border-border bg-card py-12">
+				<Empty className="rounded-3xl border border-border/70 bg-card py-12">
 					<EmptyHeader>
 						<EmptyTitle className="text-lg font-semibold">A rede ainda não tem escolas</EmptyTitle>
 						<EmptyDescription>Cole abaixo os códigos INEP das escolas que a secretaria acompanha.</EmptyDescription>

@@ -53,7 +53,7 @@ export function FormularioDeItem({ codigoInep, proximaPrioridade }: { codigoInep
 			onSubmit={enviar}
 			noValidate
 			aria-labelledby="titulo-novo-item"
-			className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5 sm:p-6"
+			className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-card p-5 sm:p-6"
 		>
 			<div className="flex items-start justify-between gap-3">
 				<h2 id="titulo-novo-item" className="text-lg font-semibold">
