@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { usePathname } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
 import { areaDoEndereco, type CorDaFaixa } from "@/config/navegacao";
@@ -42,7 +42,7 @@ export function CabecalhoDaPagina({ titulo, frase, rotulo, acoes, cor, children 
 	const escura = ESCURAS.includes(corDaFaixa);
 
 	return (
-		<motion.header
+		<m.header
 			initial={{ opacity: 0, scale: 0.985 }}
 			animate={{ opacity: 1, scale: 1 }}
 			style={escura ? BOTOES_NO_ESCURO : BOTOES_NO_CLARO}
@@ -53,14 +53,14 @@ export function CabecalhoDaPagina({ titulo, frase, rotulo, acoes, cor, children 
 		>
 			<div className="flex flex-col gap-4">
 				{rotulo && <span className={cn("text-[15px] font-semibold", escura ? "text-white/80" : "text-tinta/75")}>{rotulo}</span>}
-				<motion.h1
+				<m.h1
 					initial={{ opacity: 0, y: 14 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.06 }}
 					className="max-w-[18ch] font-heading text-[clamp(44px,7vw,120px)] leading-[0.92] font-extrabold tracking-[-0.05em] text-balance"
 				>
 					{titulo}
-				</motion.h1>
+				</m.h1>
 			</div>
 			<div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
 				<p
@@ -74,6 +74,6 @@ export function CabecalhoDaPagina({ titulo, frase, rotulo, acoes, cor, children 
 				{acoes && <div className="flex flex-wrap items-center gap-2.5">{acoes}</div>}
 			</div>
 			{children}
-		</motion.header>
+		</m.header>
 	);
 }

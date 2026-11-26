@@ -5,7 +5,7 @@ import { api } from "@convex/_generated/api";
 import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useMemo, useSyncExternalStore } from "react";
+import { createContext, type ReactNode, use, useMemo, useSyncExternalStore } from "react";
 
 export type DadosDoPainel = NonNullable<FunctionReturnType<typeof api.painel.daEscola>>;
 export type ItemDoPainel = DadosDoPainel["itens"][number];
@@ -56,11 +56,28 @@ function useHidratado(): boolean {
 	);
 }
 
-export function usePainelDaEscola() {
+function useCalcularPainel() {
 	const codigoInep = useCodigoInep();
 	const hidratado = useHidratado();
 	const consulta = useQuery(api.painel.daEscola, { codigoInep });
 	const dados = hidratado ? consulta : undefined;
 	const derivados = useMemo(() => (dados ? derivar(dados) : null), [dados]);
-	return { codigoInep, carregando: dados === undefined, dados: dados ?? null, derivados };
+	return useMemo(
+		() => ({ codigoInep, carregando: dados === undefined, dados: dados ?? null, derivados }),
+		[codigoInep, dados, derivados],
+	);
+}
+
+const ContextoDoPainel = createContext<ReturnType<typeof useCalcularPainel> | null>(null);
+
+export function ProvedorDoPainel({ children }: { children: ReactNode }) {
+	return <ContextoDoPainel value={useCalcularPainel()}>{children}</ContextoDoPainel>;
+}
+
+export function usePainelDaEscola() {
+	const painel = use(ContextoDoPainel);
+	if (!painel) {
+		throw new Error("usePainelDaEscola precisa estar dentro do ProvedorDoPainel.");
+	}
+	return painel;
 }

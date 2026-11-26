@@ -14,7 +14,7 @@ import { internal } from "./_generated/api";
 import { action, internalMutation } from "./_generated/server";
 import { falhar, mensagemDoErro } from "./lib/falha";
 import { type ConfiguracaoDoLlm, lerConfiguracaoDoLlm, sugerirItensComLlm } from "./lib/llm";
-import { itensComOrcamentos, paraNecessidade, planoEditavel } from "./lib/plano";
+import { itensComOrcamentos, itensDoPlano, paraNecessidade, planoEditavel } from "./lib/plano";
 import { buscarSaldoAtual } from "./saldos";
 import { MENSAGEM_DO_LIMITE, tentarUso } from "./usos";
 
@@ -75,18 +75,14 @@ export const registrar = internalMutation({
 	args: { codigoInep: v.string(), sugestoes: v.array(sugestaoRecebida) },
 	handler: async (ctx, { codigoInep, sugestoes }): Promise<Registro> => {
 		const { plano } = await planoEditavel(ctx, codigoInep);
-		const existentes = await ctx.db
-			.query("item")
-			.withIndex("por_plano_prioridade", (q) => q.eq("planoId", plano._id))
-			.collect();
+		const existentes = await itensDoPlano(ctx, plano._id);
 		const { aceitas, bloqueadas, descartadas } = validarSugestoes(
 			sugestoes,
 			existentes.map(({ descricao }) => descricao),
 		);
-		for (const necessidade of aceitas) {
-			await ctx.db.insert("item", { planoId: plano._id, ...necessidade });
-		}
-		return { adicionados: aceitas.length, bloqueadas, descartadas };
+		const cabem = aceitas.slice(0, Math.max(0, LIMITES.itensPorPlano - existentes.length));
+		await Promise.all(cabem.map((necessidade) => ctx.db.insert("item", { planoId: plano._id, ...necessidade })));
+		return { adicionados: cabem.length, bloqueadas, descartadas };
 	},
 });
 

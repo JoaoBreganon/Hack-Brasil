@@ -1,4 +1,4 @@
-import { EXERCICIO_SIMULADO, montarPlanoDeCompra, type Necessidade, type PlanoDeCompra, type Saldo } from "@aloca/dominio";
+import { EXERCICIO_SIMULADO, LIMITES, montarPlanoDeCompra, type Necessidade, type PlanoDeCompra, type Saldo } from "@aloca/dominio";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { buscarEscola } from "../escolas";
@@ -15,20 +15,23 @@ export function buscarPlano(ctx: QueryCtx, escolaId: Id<"escola">) {
 		.unique();
 }
 
-export async function itensComOrcamentos(ctx: QueryCtx, planoId: Id<"plano">): Promise<ItemComOrcamentos[]> {
-	const itens = await ctx.db
+export function itensDoPlano(ctx: QueryCtx, planoId: Id<"plano">): Promise<Doc<"item">[]> {
+	return ctx.db
 		.query("item")
 		.withIndex("por_plano_prioridade", (q) => q.eq("planoId", planoId))
-		.collect();
-	return Promise.all(
-		itens.map(async (item) => ({
-			...item,
-			orcamentos: await ctx.db
-				.query("orcamento")
-				.withIndex("por_item", (q) => q.eq("itemId", item._id))
-				.collect(),
-		})),
-	);
+		.take(LIMITES.itensPorPlano);
+}
+
+export function orcamentosDoItem(ctx: QueryCtx, itemId: Id<"item">): Promise<Doc<"orcamento">[]> {
+	return ctx.db
+		.query("orcamento")
+		.withIndex("por_item", (q) => q.eq("itemId", itemId))
+		.take(LIMITES.orcamentosPorItem);
+}
+
+export async function itensComOrcamentos(ctx: QueryCtx, planoId: Id<"plano">): Promise<ItemComOrcamentos[]> {
+	const itens = await itensDoPlano(ctx, planoId);
+	return Promise.all(itens.map(async (item) => ({ ...item, orcamentos: await orcamentosDoItem(ctx, item._id) })));
 }
 
 export function paraNecessidade(item: ItemComOrcamentos): Necessidade {
@@ -50,6 +53,17 @@ export function paraNecessidade(item: ItemComOrcamentos): Necessidade {
 export async function calcularPlano(ctx: QueryCtx, planoId: Id<"plano">, saldo: Saldo): Promise<PlanoDeCompra> {
 	const itens = await itensComOrcamentos(ctx, planoId);
 	return montarPlanoDeCompra(saldo, itens.map(paraNecessidade));
+}
+
+export async function totalAprovado(ctx: QueryCtx, plano: Doc<"plano">, saldo: Saldo): Promise<number | null> {
+	if (plano.status !== "aprovado") {
+		return null;
+	}
+	if (plano.totalAprovadoEmCentavos !== undefined) {
+		return plano.totalAprovadoEmCentavos;
+	}
+	const { totalPorCategoria } = await calcularPlano(ctx, plano._id, saldo);
+	return totalPorCategoria.custeio + totalPorCategoria.capital;
 }
 
 export async function planoEditavel(ctx: MutationCtx, codigoInep: string) {

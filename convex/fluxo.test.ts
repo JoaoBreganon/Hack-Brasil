@@ -180,12 +180,15 @@ describe("plano de compra", () => {
 		await t.mutation(api.planos.aprovar, { codigoInep: INEP });
 		const painel = await t.query(api.painel.daEscola, { codigoInep: INEP });
 		expect(painel?.plano?.status).toBe("aprovado");
+		const planoGuardado = () => t.run((ctx) => ctx.db.query("plano").first());
+		expect((await planoGuardado())?.totalAprovadoEmCentavos).toBe(1_343_000);
 		const itemId = painel?.itens[0]._id;
 		if (!itemId) {
 			throw new Error("o exemplo não criou itens");
 		}
 		await expect(t.mutation(api.itens.remover, { itemId })).rejects.toThrow("Reabra o plano");
 		await t.mutation(api.planos.reabrir, { codigoInep: INEP });
+		expect((await planoGuardado())?.totalAprovadoEmCentavos).toBeUndefined();
 		await t.mutation(api.itens.remover, { itemId });
 		const depois = await t.query(api.painel.daEscola, { codigoInep: INEP });
 		expect(depois?.itens).toHaveLength(painel.itens.length - 1);
@@ -1071,6 +1074,30 @@ describe("sugestão de itens", () => {
 		expect(resultado).toMatchObject({ adicionados: 1, descartadas: 2 });
 		expect(resultado.bloqueadas.map(({ tipo }) => tipo)).toEqual(["aluguel", "tributo"]);
 		expect(await descricoesSalvas(t)).toEqual(["Ventiladores"]);
+	});
+
+	it("não passa do limite de itens do plano ao gravar sugestões", async () => {
+		const t = await escolaComSaldo();
+		await Promise.all(
+			Array.from({ length: LIMITES.itensPorPlano - 1 }, (_, indice) =>
+				t.mutation(api.itens.adicionar, {
+					codigoInep: INEP,
+					descricao: `Item número ${indice + 1}`,
+					tipo: "material de consumo",
+					quantidade: 1,
+					prioridade: 1,
+				}),
+			),
+		);
+		const resultado = await t.mutation(internal.sugestoes.registrar, {
+			codigoInep: INEP,
+			sugestoes: [
+				{ descricao: "Ventiladores", tipo: "material permanente", quantidade: 4, prioridade: 3 },
+				{ descricao: "Papel sulfite", tipo: "material de consumo", quantidade: 10, prioridade: 4 },
+			],
+		});
+		expect(resultado.adicionados).toBe(1);
+		expect(await descricoesSalvas(t)).toHaveLength(LIMITES.itensPorPlano);
 	});
 
 	it("recusa pedido longo e plano aprovado", async () => {

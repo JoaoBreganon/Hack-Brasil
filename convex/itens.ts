@@ -1,21 +1,13 @@
 import { LIMITES, NECESSIDADES_EXEMPLO, validarJustificativa, validarNecessidade } from "@aloca/dominio";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
-import { internalMutation, internalQuery, mutation, type MutationCtx } from "./_generated/server";
+import { internalMutation, internalQuery, mutation } from "./_generated/server";
 import { falhar } from "./lib/falha";
 import { exigirEdicao } from "./lib/acesso";
-import { itemEditavel, planoEditavel } from "./lib/plano";
+import { itemEditavel, itensDoPlano, orcamentosDoItem, planoEditavel } from "./lib/plano";
 import { tipoDeDespesa } from "./schema";
 import { tentarUso } from "./usos";
 
 const INTERVALO_ENTRE_BUSCAS_EM_MS = 60_000;
-
-async function itensDoPlano(ctx: MutationCtx, planoId: Id<"plano">) {
-	return ctx.db
-		.query("item")
-		.withIndex("por_plano_prioridade", (q) => q.eq("planoId", planoId))
-		.collect();
-}
 
 export const adicionar = mutation({
 	args: { codigoInep: v.string(), descricao: v.string(), tipo: tipoDeDespesa, quantidade: v.number(), prioridade: v.number() },
@@ -36,10 +28,7 @@ export const remover = mutation({
 	args: { itemId: v.id("item") },
 	handler: async (ctx, { itemId }) => {
 		await itemEditavel(ctx, itemId);
-		const orcamentos = await ctx.db
-			.query("orcamento")
-			.withIndex("por_item", (q) => q.eq("itemId", itemId))
-			.collect();
+		const orcamentos = await orcamentosDoItem(ctx, itemId);
 		await Promise.all(orcamentos.map(({ _id }) => ctx.db.delete(_id)));
 		await ctx.db.delete(itemId);
 	},
@@ -88,10 +77,7 @@ export const paraBusca = internalQuery({
 			return null;
 		}
 		await exigirEdicao(ctx, escola);
-		const orcamentos = await ctx.db
-			.query("orcamento")
-			.withIndex("por_item", (q) => q.eq("itemId", itemId))
-			.collect();
+		const orcamentos = await orcamentosDoItem(ctx, itemId);
 		return {
 			descricao: item.descricao,
 			tipo: item.tipo,

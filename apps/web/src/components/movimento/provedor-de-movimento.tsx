@@ -1,12 +1,18 @@
 "use client";
 
-import { MotionConfig } from "motion/react";
+import { LazyMotion, MotionConfig } from "motion/react";
 import type { ReactNode } from "react";
+
+function carregarRecursos() {
+	return import("./recursos").then((modulo) => modulo.default);
+}
 
 export function ProvedorDeMovimento({ children }: { children: ReactNode }) {
 	return (
-		<MotionConfig reducedMotion="user" transition={{ type: "spring", stiffness: 260, damping: 30, mass: 0.9 }}>
-			{children}
-		</MotionConfig>
+		<LazyMotion features={carregarRecursos} strict>
+			<MotionConfig reducedMotion="user" transition={{ type: "spring", stiffness: 260, damping: 30, mass: 0.9 }}>
+				{children}
+			</MotionConfig>
+		</LazyMotion>
 	);
 }

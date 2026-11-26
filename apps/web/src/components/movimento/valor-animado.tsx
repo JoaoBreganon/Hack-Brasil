@@ -1,10 +1,14 @@
 "use client";
 
 import { formatarReais } from "@aloca/dominio";
-import { animate, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 
-const DURACAO_EM_SEGUNDOS = 0.9;
+const DURACAO_EM_MS = 900;
+
+function desacelerar(progresso: number): number {
+	return 1 - (1 - progresso) ** 4;
+}
 
 export function ValorAnimado({ centavos }: { centavos: number }) {
 	const reduzir = useReducedMotion();
@@ -15,14 +19,19 @@ export function ValorAnimado({ centavos }: { centavos: number }) {
 		if (reduzir || !elemento) {
 			return;
 		}
-		const controle = animate(0, centavos, {
-			duration: DURACAO_EM_SEGUNDOS,
-			ease: [0.16, 1, 0.3, 1],
-			onUpdate: (valor) => {
-				elemento.textContent = formatarReais(Math.round(valor));
-			},
-		});
-		return () => controle.stop();
+		const inicio = performance.now();
+		let quadro = 0;
+		function desenhar(agora: number) {
+			const progresso = Math.min(1, (agora - inicio) / DURACAO_EM_MS);
+			if (elemento) {
+				elemento.textContent = formatarReais(Math.round(centavos * desacelerar(progresso)));
+			}
+			if (progresso < 1) {
+				quadro = requestAnimationFrame(desenhar);
+			}
+		}
+		quadro = requestAnimationFrame(desenhar);
+		return () => cancelAnimationFrame(quadro);
 	}, [centavos, reduzir]);
 
 	return (

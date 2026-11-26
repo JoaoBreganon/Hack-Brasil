@@ -4,7 +4,7 @@ import { type CapituloDoPrazo, capituloDoPrazo, formatarReais, montarMesesDoPraz
 import { api } from "@convex/_generated/api";
 import { useAction } from "convex/react";
 import { ArrowRightIcon, TriangleAlertIcon } from "lucide-react";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { CalendarioDoPrazo, LegendaDoCalendario } from "@/components/calendario/calendario-do-prazo";
@@ -86,7 +86,7 @@ export function TelaDeInicio() {
 									aria-label={`${formatarReais(noPlano)} dos ${formatarReais(saldoTotal)} já estão no plano`}
 									className="h-2.5 overflow-hidden rounded-full bg-white/60"
 								>
-									<motion.div
+									<m.div
 										className="h-full rounded-full bg-tinta"
 										initial={{ width: 0 }}
 										animate={{ width: `${percentual}%` }}

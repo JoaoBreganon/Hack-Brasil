@@ -60,6 +60,7 @@ export default defineSchema({
 		saldoId: v.id("saldo"),
 		status: umDos(STATUS_DO_PLANO),
 		aprovadoEm: v.optional(v.number()),
+		totalAprovadoEmCentavos: v.optional(v.number()),
 		sugestaoComIaEm: v.optional(v.number()),
 	}).index("por_escola_exercicio", ["escolaId", "exercicio"]),
 

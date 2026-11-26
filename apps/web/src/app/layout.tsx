@@ -1,9 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { ConvexClientProvider } from "@/components/convex-client-provider";
-import { ProvedorDeMovimento } from "@/components/movimento/provedor-de-movimento";
 import { DadosEstruturados } from "@/components/seo/dados-estruturados";
-import { Toaster } from "@/components/ui/sonner";
 import { SITE } from "@/config/site";
 import "./globals.css";
 
@@ -65,10 +62,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 		<html lang={SITE.idioma} className={`${geist.variable} ${bricolage.variable} h-full antialiased`}>
 			<body className="flex min-h-full flex-col print:bg-white">
 				<DadosEstruturados />
-				<ProvedorDeMovimento>
-					<ConvexClientProvider>{children}</ConvexClientProvider>
-				</ProvedorDeMovimento>
-				<Toaster position="top-center" richColors closeButton />
+				{children}
 			</body>
 		</html>
 	);

@@ -15,7 +15,7 @@ import { buscarEscola } from "./escolas";
 import { usuarioAtual } from "./lib/acesso";
 import { FORMATO_DO_CODIGO, gerarCodigo, VALIDADE_DO_CONVITE_EM_MS } from "./lib/codigo";
 import { falhar } from "./lib/falha";
-import { buscarPlano, calcularPlano } from "./lib/plano";
+import { buscarPlano, totalAprovado } from "./lib/plano";
 import { buscarSaldoAtual } from "./saldos";
 
 type Participacao = { usuario: string; membro: Doc<"membroDaRede">; rede: Doc<"rede"> };
@@ -58,13 +58,13 @@ async function situacaoDaEscola(ctx: QueryCtx, codigoInep: string): Promise<Esco
 			.withIndex("por_escola_usuario", (q) => q.eq("escolaId", escola._id))
 			.first(),
 	]);
-	const calculado = saldo && plano?.status === "aprovado" ? await calcularPlano(ctx, plano._id, saldo.saldo) : null;
+	const aprovado = saldo && plano ? await totalAprovado(ctx, plano, saldo.saldo) : null;
 	return {
 		codigoInep,
 		nome: escola.nome,
 		municipio: escola.municipio,
 		saldoTotal: saldo ? saldo.saldo.custeio + saldo.saldo.capital : null,
-		totalAprovado: calculado ? calculado.totalPorCategoria.custeio + calculado.totalPorCategoria.capital : null,
+		totalAprovado: aprovado,
 		pendencias: saldo?.pendencias?.length ?? 0,
 		temResponsavel: responsavel !== null,
 	};

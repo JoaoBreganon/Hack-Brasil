@@ -1,16 +1,8 @@
 import { cotacoesDeExemplo, LIMITES, ORCAMENTOS_EXIGIDOS, validarCotacao } from "@aloca/dominio";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, type MutationCtx } from "./_generated/server";
+import { internalMutation, mutation } from "./_generated/server";
 import { falhar } from "./lib/falha";
-import { itemEditavel } from "./lib/plano";
-
-function orcamentosDoItem(ctx: MutationCtx, itemId: Id<"item">) {
-	return ctx.db
-		.query("orcamento")
-		.withIndex("por_item", (q) => q.eq("itemId", itemId))
-		.collect();
-}
+import { itemEditavel, orcamentosDoItem } from "./lib/plano";
 
 export const adicionar = mutation({
 	args: { itemId: v.id("item"), fornecedor: v.string(), valorEmCentavos: v.number(), endereco: v.optional(v.string()) },

@@ -21,7 +21,7 @@ import { buscarEscola } from "./escolas";
 import { exigirEdicao, lerAcesso } from "./lib/acesso";
 import { falhar, mensagemDoErro } from "./lib/falha";
 import { type ConfiguracaoDaNvoip, enviarAlertaPelaNvoip, lerConfiguracaoDaNvoip } from "./lib/nvoip";
-import { buscarPlano, calcularPlano } from "./lib/plano";
+import { buscarPlano, totalAprovado } from "./lib/plano";
 import { type ConfiguracaoDoResend, enviarEmailPeloResend, lerConfiguracaoDoResend } from "./lib/resend";
 import { buscarSaldoAtual } from "./saldos";
 import { canalDoAlerta, nivelDeRisco } from "./schema";
@@ -126,8 +126,7 @@ export const dadosParaEnvio = internalQuery({
 			buscarPlano(ctx, escola._id),
 		]);
 		const saldoTotal = saldo.saldo.custeio + saldo.saldo.capital;
-		const noPlano = plano?.status === "aprovado" ? await calcularPlano(ctx, plano._id, saldo.saldo) : null;
-		const totalNoPlano = noPlano ? noPlano.totalPorCategoria.custeio + noPlano.totalPorCategoria.capital : 0;
+		const totalNoPlano = (plano && (await totalAprovado(ctx, plano, saldo.saldo))) ?? 0;
 		return {
 			escolaId: escola._id,
 			codigoInep: escola.codigoInep,

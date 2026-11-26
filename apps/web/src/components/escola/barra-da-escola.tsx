@@ -2,7 +2,7 @@
 
 import { cn } from "cn";
 import { ArrowLeftRightIcon, LogInIcon, LogOutIcon, MenuIcon, XIcon } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -105,7 +105,7 @@ export function BarraDaEscola() {
 							return (
 								<li key={area.caminho} className="relative">
 									{atual && (
-										<motion.span
+										<m.span
 											layoutId="area-atual"
 											aria-hidden="true"
 											className="absolute inset-0 rounded-full bg-tinta"
@@ -144,7 +144,7 @@ export function BarraDaEscola() {
 			</div>
 			<AnimatePresence>
 				{aberto && (
-					<motion.nav
+					<m.nav
 						id={ID_DO_MENU}
 						aria-label="Áreas da escola"
 						initial={{ opacity: 0, y: -12 }}
@@ -156,7 +156,7 @@ export function BarraDaEscola() {
 							{AREAS.map((area, indice) => {
 								const endereco = enderecoDaArea(codigoInep, area.caminho);
 								return (
-									<motion.li
+									<m.li
 										key={area.caminho}
 										initial={{ opacity: 0, x: -16 }}
 										animate={{ opacity: 1, x: 0 }}
@@ -169,7 +169,7 @@ export function BarraDaEscola() {
 										>
 											{area.rotulo}
 										</Link>
-									</motion.li>
+									</m.li>
 								);
 							})}
 						</ul>
@@ -177,7 +177,7 @@ export function BarraDaEscola() {
 							<TrocarDeEscola />
 							<Conta />
 						</div>
-					</motion.nav>
+					</m.nav>
 				)}
 			</AnimatePresence>
 		</header>

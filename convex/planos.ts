@@ -11,16 +11,22 @@ export const aprovar = mutation({
 	handler: async (ctx, { codigoInep }) => {
 		const escola = (await buscarEscola(ctx, codigoInep)) ?? falhar("Esta escola ainda não foi buscada.");
 		await exigirEdicao(ctx, escola);
-		const plano = (await buscarPlano(ctx, escola._id)) ?? falhar("Monte o plano antes de aprovar.");
-		const saldo = (await buscarSaldoAtual(ctx, escola._id)) ?? falhar("Busque o saldo da escola antes de aprovar.");
+		const [planoAtual, saldoAtual] = await Promise.all([buscarPlano(ctx, escola._id), buscarSaldoAtual(ctx, escola._id)]);
+		const plano = planoAtual ?? falhar("Monte o plano antes de aprovar.");
+		const saldo = saldoAtual ?? falhar("Busque o saldo da escola antes de aprovar.");
 		if (plano.status === "aprovado") {
 			return;
 		}
-		const { itens } = await calcularPlano(ctx, plano._id, saldo.saldo);
+		const { itens, totalPorCategoria } = await calcularPlano(ctx, plano._id, saldo.saldo);
 		if (itens.length === 0) {
 			falhar("Nenhum item está pronto para compra. Confira os orçamentos e as regras antes de aprovar.");
 		}
-		await ctx.db.patch(plano._id, { status: "aprovado", aprovadoEm: Date.now(), saldoId: saldo._id });
+		await ctx.db.patch(plano._id, {
+			status: "aprovado",
+			aprovadoEm: Date.now(),
+			saldoId: saldo._id,
+			totalAprovadoEmCentavos: totalPorCategoria.custeio + totalPorCategoria.capital,
+		});
 	},
 });
 
@@ -30,6 +36,6 @@ export const reabrir = mutation({
 		const escola = (await buscarEscola(ctx, codigoInep)) ?? falhar("Esta escola ainda não foi buscada.");
 		await exigirEdicao(ctx, escola);
 		const plano = (await buscarPlano(ctx, escola._id)) ?? falhar("Esta escola ainda não tem plano.");
-		await ctx.db.patch(plano._id, { status: "rascunho", aprovadoEm: undefined });
+		await ctx.db.patch(plano._id, { status: "rascunho", aprovadoEm: undefined, totalAprovadoEmCentavos: undefined });
 	},
 });

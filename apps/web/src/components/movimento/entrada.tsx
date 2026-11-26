@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { Children, Fragment, isValidElement, type ReactNode } from "react";
 
 const ATRASO_ENTRE_BLOCOS = 0.07;
@@ -13,7 +13,7 @@ function achatar(filhos: ReactNode): ReactNode[] {
 
 export function Entrada({ children }: { children: ReactNode }) {
 	return achatar(children).map((filho, indice) => (
-		<motion.div
+		<m.div
 			key={indice}
 			initial={{ opacity: 0, y: 18 }}
 			animate={{ opacity: 1, y: 0 }}
@@ -21,6 +21,6 @@ export function Entrada({ children }: { children: ReactNode }) {
 			className="min-w-0"
 		>
 			{filho}
-		</motion.div>
+		</m.div>
 	));
 }
